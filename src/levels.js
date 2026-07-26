@@ -1,0 +1,92 @@
+// Level configurations — difficulty curve: more litter, less time per piece,
+// more hazards, litter placed higher/farther, finally a boss.
+
+export const TRASH_TYPES = {
+  plastic: { label: 'Plastic',  bin: 'plastic', color: 0x4aa8ff, points: 100 },
+  paper:   { label: 'Paper',    bin: 'paper',   color: 0xffd76a, points: 100 },
+  metal:   { label: 'Metal',    bin: 'metal',   color: 0xff5f57, points: 100 },
+  glass:   { label: 'Glass',    bin: 'glass',   color: 0xb17aff, points: 100 },
+  organic: { label: 'Organic',  bin: 'organic', color: 0x6dd34e, points: 100 },
+  ewaste:  { label: 'E-Waste',  bin: 'ewaste',  color: 0xff9f43, points: 150 },
+  net:     { label: 'Fishing Net', bin: 'plastic', color: 0x9adcff, points: 200 },
+  barrel:  { label: 'Toxic Barrel', bin: 'ewaste', color: 0xa4ff43, points: 300 },
+};
+
+export const BINS = [
+  { id: 'plastic', label: 'PLASTIC', color: 0x2f7fd6 },
+  { id: 'paper',   label: 'PAPER',   color: 0xd9a824 },
+  { id: 'metal',   label: 'METAL',   color: 0xd6473f },
+  { id: 'glass',   label: 'GLASS',   color: 0x8a5cd6 },
+  { id: 'organic', label: 'ORGANIC', color: 0x3f9b3a },
+  { id: 'ewaste',  label: 'E-WASTE', color: 0xd97c24 },
+];
+
+export const LEVELS = [
+  {
+    id: 1, name: 'School Campus', env: 'campus',
+    sub: 'Your own school grounds are littered after the fair. Show everyone how an Eco Ranger works!',
+    time: 240, trash: 10, bagCap: 12,
+    trashMix: ['plastic', 'paper', 'organic', 'metal'],
+    animals: [{ type: 'bird', name: 'Sparrow' }],
+    hazards: {},
+    powerups: [],
+    elevatedRatio: 0.15, bounds: 55,
+    tutorial: true,
+    fact: '🌍 Eco Fact: A single plastic bottle takes up to 450 YEARS to decompose. Recycling one saves enough energy to power a light bulb for 3 hours!',
+    badge: { icon: '🌟', name: 'Eco Hero', sub: 'SDG 12 — Responsible Consumption' },
+  },
+  {
+    id: 2, name: 'Public Park', env: 'park',
+    sub: 'Picnic season left the park a mess. Careful — spilled oil is slippery and dead branches are falling!',
+    time: 210, trash: 16, bagCap: 12,
+    trashMix: ['plastic', 'paper', 'organic', 'metal', 'glass'],
+    animals: [{ type: 'rabbit', name: 'Rabbit' }, { type: 'squirrel', name: 'Squirrel' }],
+    hazards: { slicks: 3, droppers: 3 },
+    powerups: ['magnet', 'speed'],
+    elevatedRatio: 0.25, bounds: 65,
+    fact: '🐿 Wildlife Fact: Small animals often mistake litter for food. Over 1 million animals die every year from eating or getting trapped in trash. Your cleanup saves lives!',
+    badge: { icon: '🌳', name: 'Nature Warrior', sub: 'SDG 15 — Life on Land' },
+  },
+  {
+    id: 3, name: 'City Streets', env: 'city',
+    sub: 'Rush hour in a smog-choked city. Dodge the traffic, avoid toxic fumes, and grapple litter off the rooftops!',
+    time: 210, trash: 22, bagCap: 12,
+    trashMix: ['plastic', 'paper', 'metal', 'glass', 'ewaste'],
+    animals: [{ type: 'bird', name: 'Pigeon' }, { type: 'bird', name: 'Pigeon' }],
+    hazards: { cars: 4, gas: 3 },
+    powerups: ['magnet', 'speed', 'freeze'],
+    elevatedRatio: 0.35, bounds: 75,
+    fact: '🏙 Recycling Fact: Recycling one aluminium can saves enough energy to run a TV for 3 hours — and aluminium can be recycled FOREVER without losing quality!',
+    badge: { icon: '♻️', name: 'Recycling Master', sub: 'SDG 11 — Sustainable Cities' },
+  },
+  {
+    id: 4, name: 'Sunset Beach', env: 'beach',
+    sub: 'Plastic is choking the sea. Grapple litter floating on the waves, free the trapped turtles — and mind the coconuts!',
+    time: 195, trash: 26, bagCap: 12,
+    trashMix: ['plastic', 'paper', 'metal', 'glass', 'organic', 'net'],
+    animals: [{ type: 'turtle', name: 'Turtle' }, { type: 'turtle', name: 'Turtle' }],
+    hazards: { droppers: 4, water: true },
+    powerups: ['magnet', 'speed', 'freeze', 'double'],
+    elevatedRatio: 0.3, bounds: 70,
+    fact: '🌊 Ocean Fact: 8 million tonnes of plastic enter our oceans every year. By 2050 there could be more plastic than fish in the sea — unless we act now.',
+    badge: { icon: '🐢', name: 'River Guardian', sub: 'SDG 14 — Life Below Water' },
+  },
+  {
+    id: 5, name: 'River Bank — THE GARBAGE MONSTER', env: 'river',
+    sub: 'All the dumped waste has fused into a MONSTER! Recycle its litter to expose its core, then GRAPPLE THE CORE!',
+    time: 270, trash: 20, bagCap: 12,
+    trashMix: ['plastic', 'metal', 'glass', 'ewaste', 'barrel'],
+    animals: [{ type: 'deer', name: 'Deer' }],
+    hazards: { boss: true, water: true },
+    powerups: ['magnet', 'speed', 'freeze', 'double'],
+    elevatedRatio: 0.2, bounds: 70,
+    fact: '💧 Planet Fact: Clean rivers are the veins of the Earth. One litre of dumped oil can pollute one MILLION litres of fresh water. Every barrel you removed today mattered.',
+    badge: { icon: '🛡️', name: 'Planet Defender', sub: 'SDG 13 — Climate Action' },
+  },
+];
+
+export const NPC_CHEERS = [
+  'Thank you, Eco Ranger! 💚', 'Wow, look at the sky clearing!', 'The flowers are back!',
+  'You inspire us all!', 'Our city is beautiful again!', 'The kids can play here again!',
+  'Amazing! Keep going!', 'I can breathe fresh air again!',
+];

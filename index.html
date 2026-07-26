@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garbage Grapple — Save Our Planet</title>
+<style>
+  :root {
+    --ink: #0b2418; --deep: #10331f; --leaf: #34c759; --leaf-d: #1f8a3d;
+    --sky: #6fd3ff; --sun: #ffd76a; --sun-d: #d9a824; --cream: #f4efdf;
+    --red: #ff5f57; --blue: #4aa8ff; --purple: #b17aff; --orange: #ff9f43;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--ink);
+    font-family: 'Segoe UI', 'Trebuchet MS', system-ui, sans-serif; user-select: none; }
+  #game { position: fixed; inset: 0; }
+  #game canvas { display: block; }
+  .hidden { display: none !important; }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 30; }
+
+  button { cursor: pointer; border: none; font-family: inherit; }
+  .btn { padding: 14px 44px; font-size: 22px; font-weight: 800; letter-spacing: 1px;
+    color: var(--ink); background: linear-gradient(180deg, #7dffa0, var(--leaf) 55%, var(--leaf-d));
+    border-radius: 40px; box-shadow: 0 6px 0 #14612b, 0 12px 24px rgba(0,0,0,.45);
+    transition: transform .12s, box-shadow .12s; text-transform: uppercase; }
+  .btn:hover { transform: translateY(-2px) scale(1.03); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #14612b; }
+  .btn.small { font-size: 15px; padding: 9px 26px; box-shadow: 0 4px 0 #14612b, 0 8px 16px rgba(0,0,0,.4); }
+  .btn.ghost { background: rgba(255,255,255,.12); color: var(--cream); box-shadow: 0 4px 0 rgba(0,0,0,.35);
+    border: 2px solid rgba(255,255,255,.35); }
+
+  /* ============ START SCREEN ============ */
+  #startScreen { z-index: 60;
+    background: radial-gradient(ellipse at 50% 115%, #2c8a4f 0%, #123f27 48%, #071a10 100%);
+    transition: opacity .7s; }
+  #startScreen.fading { opacity: 0; pointer-events: none; }
+  #startFx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .fx { position: absolute; top: -8%; font-size: 26px; animation: fall linear infinite; opacity: .85;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+  @keyframes fall {
+    0%   { transform: translateY(-5vh) translateX(0) rotate(0); }
+    50%  { transform: translateY(55vh) translateX(5vw) rotate(200deg); }
+    100% { transform: translateY(115vh) translateX(-3vw) rotate(380deg); }
+  }
+  .kicker { color: var(--sun); font-weight: 800; letter-spacing: 6px; font-size: 14px;
+    text-transform: uppercase; margin-bottom: 6px; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  #title { font-size: clamp(52px, 9vw, 108px); font-weight: 900; line-height: .95; text-align: center;
+    background: linear-gradient(180deg, #eafff0 10%, #7dffa0 45%, #1f8a3d 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 5px 0 #06230f) drop-shadow(0 14px 30px rgba(0,0,0,.6));
+    letter-spacing: 2px; }
+  #tagline { color: var(--cream); font-size: clamp(14px, 2vw, 20px); margin-top: 14px; opacity: .92;
+    text-shadow: 0 2px 6px rgba(0,0,0,.7); font-style: italic; }
+  #nameRow { margin-top: 30px; display: flex; gap: 10px; align-items: center; }
+  #playerName { padding: 12px 18px; font-size: 18px; border-radius: 30px; border: 2px solid var(--leaf);
+    background: rgba(0,0,0,.35); color: var(--cream); outline: none; width: 250px; text-align: center;
+    font-family: inherit; }
+  #playerName::placeholder { color: rgba(244,239,223,.5); }
+  #startBtns { margin-top: 24px; display: flex; gap: 16px; align-items: center; }
+  #sdgRow { position: absolute; bottom: 26px; display: flex; gap: 12px; color: var(--cream);
+    font-size: 13px; opacity: .85; align-items: center; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  .sdgChip { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+    padding: 5px 12px; border-radius: 20px; }
+
+  /* ============ HOW TO PLAY ============ */
+  #howto { z-index: 70; background: rgba(4, 18, 10, .88); backdrop-filter: blur(6px); }
+  .card { background: linear-gradient(180deg, #12402605, #0d301c00), rgba(9, 33, 20, .97);
+    border: 2px solid rgba(125,255,160,.35); border-radius: 22px; padding: 30px 40px;
+    max-width: 860px; width: 92vw; max-height: 88vh; overflow-y: auto; color: var(--cream);
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .card h2 { color: var(--sun); font-size: 30px; margin-bottom: 4px; letter-spacing: 1px; }
+  .card h3 { color: #7dffa0; margin: 16px 0 8px; font-size: 17px; letter-spacing: .5px; }
+  .ctrlGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 26px; margin-top: 6px; }
+  .ctrl { display: flex; align-items: center; gap: 12px; font-size: 15px; }
+  kbd { background: linear-gradient(180deg, #3a5c46, #223a2c); border: 1px solid #6f9a7d;
+    border-bottom-width: 3px; border-radius: 8px; padding: 4px 10px; font-family: inherit;
+    font-weight: 800; font-size: 13px; color: #eafff0; min-width: 34px; text-align: center;
+    display: inline-block; }
+  .goalList { font-size: 15px; line-height: 1.65; }
+  .goalList b { color: #7dffa0; }
+  .cardBtns { display: flex; justify-content: center; margin-top: 22px; gap: 14px; }
+
+  /* ============ LEVEL INTRO ============ */
+  #levelIntro { z-index: 55; background: rgba(4, 18, 10, .82); backdrop-filter: blur(5px);
+    transition: opacity .4s; }
+  #liNum { color: var(--sun); font-weight: 900; letter-spacing: 5px; font-size: 15px; }
+  #liName { font-size: clamp(36px, 6vw, 62px); font-weight: 900; color: #eafff0;
+    text-shadow: 0 4px 0 #06230f, 0 12px 30px rgba(0,0,0,.7); margin: 4px 0 8px; }
+  #liSub { color: var(--cream); opacity: .9; font-size: 17px; font-style: italic; margin-bottom: 20px; }
+  #liGoals { background: rgba(9,33,20,.9); border: 2px solid rgba(125,255,160,.3); border-radius: 16px;
+    padding: 18px 30px; color: var(--cream); font-size: 16px; line-height: 1.9; }
+  #liGoals b { color: #7dffa0; }
+  #liStart { margin-top: 26px; }
+
+  /* ============ HUD ============ */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 20; color: #fff;
+    font-weight: 700; }
+  .hudPanel { background: rgba(5, 20, 12, .62); border: 1.5px solid rgba(125,255,160,.28);
+    border-radius: 14px; backdrop-filter: blur(3px); }
+
+  #objectives { position: absolute; top: 14px; left: 14px; padding: 10px 16px; font-size: 14px;
+    line-height: 1.75; min-width: 190px; }
+  #objectives .done { color: #7dffa0; }
+  #objectives .obj-title { color: var(--sun); letter-spacing: 1.5px; font-size: 12px; }
+
+  #timerWrap { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    text-align: center; padding: 6px 26px 8px; }
+  #timer { font-size: 34px; font-weight: 900; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+  #timer.low { color: var(--red); animation: pulse .5s infinite alternate; }
+  @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.12); } }
+  #levelTag { font-size: 11px; color: var(--sun); letter-spacing: 2px; }
+  #frozenTag { font-size: 11px; color: #9fdcff; letter-spacing: 1px; display: none; }
+
+  #scoreWrap { position: absolute; top: 14px; right: 14px; text-align: right; padding: 8px 18px; }
+  #score { font-size: 26px; font-weight: 900; color: var(--sun); font-variant-numeric: tabular-nums; }
+  #combo { font-size: 15px; color: #7dffa0; height: 20px; transition: transform .1s; }
+  #combo.pop { transform: scale(1.35); }
+  #comboBarWrap { width: 130px; height: 5px; background: rgba(255,255,255,.15); border-radius: 3px;
+    margin: 4px 0 0 auto; overflow: hidden; }
+  #comboBar { height: 100%; width: 0%; background: linear-gradient(90deg, #7dffa0, var(--sun)); border-radius: 3px; }
+
+  #meters { position: absolute; right: 14px; bottom: 14px; padding: 12px 16px; width: 210px;
+    font-size: 12px; }
+  .meterRow { margin-bottom: 8px; }
+  .meterRow:last-child { margin-bottom: 0; }
+  .meterLabel { display: flex; justify-content: space-between; margin-bottom: 3px; letter-spacing: .5px; }
+  .meterTrack { height: 9px; background: rgba(255,255,255,.14); border-radius: 5px; overflow: hidden; }
+  .meterFill { height: 100%; border-radius: 5px; transition: width .25s; }
+  #healthFill { background: linear-gradient(90deg, #ff8a80, var(--red)); width: 100%; }
+  #bagFill { background: linear-gradient(90deg, #ffd76a, #ff9f43); width: 0%; }
+  #envFill { background: linear-gradient(90deg, #b5ff9e, #34c759); width: 0%; }
+
+  #minimapWrap { position: absolute; left: 14px; bottom: 14px; padding: 8px; }
+  #minimap { display: block; border-radius: 9px; }
+  #minimapLbl { text-align: center; font-size: 10px; letter-spacing: 2px; color: var(--sun); margin-top: 4px; }
+
+  #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 22px; height: 22px; pointer-events: none; transition: transform .12s; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,.9);
+    border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,.8); }
+  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+  #crosshair::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+  #crosshair.target { transform: translate(-50%, -50%) scale(1.5) rotate(45deg); }
+  #crosshair.target::before, #crosshair.target::after { background: #7dffa0; }
+
+  #prompt { position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%);
+    background: rgba(5,20,12,.8); border: 1.5px solid rgba(255,215,106,.5); color: var(--cream);
+    padding: 9px 22px; border-radius: 24px; font-size: 16px; white-space: nowrap; }
+  #prompt kbd { margin: 0 2px; }
+
+  #tutorialCard { position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
+    background: rgba(9,33,20,.92); border: 2px solid var(--sun); color: var(--cream);
+    padding: 12px 26px; border-radius: 16px; font-size: 17px; max-width: 640px; text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: slideDown .4s; }
+  #tutorialCard b, #tutorialCard kbd { color: var(--sun); }
+  @keyframes slideDown { from { opacity: 0; transform: translate(-50%, -14px); } }
+
+  #announce { position: absolute; top: 26%; left: 50%; transform: translateX(-50%); text-align: center;
+    font-size: clamp(30px, 5vw, 52px); font-weight: 900; color: var(--sun); white-space: nowrap;
+    text-shadow: 0 3px 0 #06230f, 0 10px 26px rgba(0,0,0,.7); opacity: 0; }
+  #announce.show { animation: announceIn 2.4s forwards; }
+  @keyframes announceIn { 0% { opacity: 0; transform: translate(-50%,0) scale(.6); }
+    12% { opacity: 1; transform: translate(-50%,0) scale(1.08); }
+    20% { transform: translate(-50%,0) scale(1); } 78% { opacity: 1; } 100% { opacity: 0; } }
+
+  #powerupRow { position: absolute; bottom: 118px; right: 16px; display: flex; flex-direction: column;
+    gap: 6px; align-items: flex-end; }
+  .puChip { background: rgba(5,20,12,.75); border: 1.5px solid rgba(125,255,160,.4);
+    border-radius: 20px; padding: 5px 14px; font-size: 13px; color: #eafff0; }
+
+  #damageFlash { position: fixed; inset: 0; pointer-events: none; z-index: 25;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(255,40,40,.55) 100%);
+    opacity: 0; transition: opacity .1s; }
+  #visionTint { position: fixed; inset: 0; pointer-events: none; z-index: 24; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(90,255,170,.28) 100%);
+    transition: opacity .3s; }
+  #visionTint .vLbl { position: absolute; top: 70px; width: 100%; text-align: center; color: #b5ffd0;
+    font-weight: 900; letter-spacing: 4px; font-size: 18px; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+
+  /* ============ PAUSE / RESULTS / END ============ */
+  #pauseScreen, #resultsScreen, #gameoverScreen, #victoryScreen { z-index: 50;
+    background: rgba(4, 18, 10, .85); backdrop-filter: blur(6px); }
+  .bigHead { font-size: clamp(38px, 6vw, 60px); font-weight: 900; color: #eafff0;
+    text-shadow: 0 4px 0 #06230f, 0 12px 30px rgba(0,0,0,.7); margin-bottom: 18px; }
+  .statTable { width: 100%; border-collapse: collapse; font-size: 16px; margin: 8px 0; }
+  .statTable td { padding: 5px 4px; }
+  .statTable td:last-child { text-align: right; color: var(--sun); font-weight: 800;
+    font-variant-numeric: tabular-nums; }
+  .statTable tr.total td { border-top: 2px solid rgba(125,255,160,.4); font-size: 20px;
+    padding-top: 10px; }
+  .ecoFact { margin-top: 14px; background: rgba(125,255,160,.1); border-left: 4px solid var(--leaf);
+    padding: 10px 16px; border-radius: 8px; font-size: 14px; line-height: 1.55; font-weight: 400; }
+  .badgeRow { display: flex; align-items: center; gap: 14px; margin-top: 14px;
+    background: rgba(255,215,106,.1); border: 1.5px dashed rgba(255,215,106,.5);
+    padding: 10px 16px; border-radius: 12px; }
+  .badgeIcon { font-size: 38px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
+  .badgeName { font-size: 18px; font-weight: 900; color: var(--sun); }
+  .badgeSub { font-size: 12px; opacity: .8; font-weight: 400; }
+
+  /* certificate */
+  #cert { background: linear-gradient(160deg, #fdf8e7, #f2e9c8); color: #23402c; border-radius: 14px;
+    padding: 34px 44px; max-width: 640px; width: 90vw; text-align: center;
+    border: 10px double #b98f2f; box-shadow: 0 30px 80px rgba(0,0,0,.7); }
+  #cert .cTop { letter-spacing: 5px; font-size: 13px; color: #b98f2f; font-weight: 800; }
+  #cert h1 { font-size: 34px; margin: 6px 0; color: #1f6b38; }
+  #cert .cName { font-size: 30px; font-weight: 900; color: #23402c; margin: 10px 0;
+    border-bottom: 2px solid #b98f2f; display: inline-block; padding: 0 26px 4px; }
+  #cert .cMsg { font-size: 15px; line-height: 1.6; margin-top: 8px; }
+  #cert .cBadges { font-size: 30px; margin: 12px 0 4px; letter-spacing: 6px; }
+  #cert .cScore { font-size: 22px; font-weight: 900; color: #1f6b38; margin-top: 6px; }
+  #cert .cQuote { margin-top: 14px; font-style: italic; font-weight: 700; color: #1f6b38;
+    font-size: 17px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="game"></div>
+
+<!-- START -->
+<div id="startScreen" class="overlay">
+  <div id="startFx"></div>
+  <div class="kicker">An Eco-Action Adventure</div>
+  <div id="title">GARBAGE<br>GRAPPLE</div>
+  <div id="tagline">Swing. Clean. Rescue. Watch the world come back to life.</div>
+  <div id="nameRow">
+    <input id="playerName" maxlength="18" placeholder="Enter your Eco Ranger name" autocomplete="off">
+  </div>
+  <div id="startBtns">
+    <button class="btn" id="playBtn">▶ Play</button>
+    <button class="btn ghost small" id="howtoBtn">How to Play</button>
+  </div>
+  <div id="sdgRow">
+    <span>Supporting UN Sustainable Development Goals:</span>
+    <span class="sdgChip">11 Sustainable Cities</span>
+    <span class="sdgChip">12 Responsible Consumption</span>
+    <span class="sdgChip">14 Life Below Water</span>
+    <span class="sdgChip">15 Life on Land</span>
+  </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div id="howto" class="overlay hidden">
+  <div class="card">
+    <h2>🎮 How to Play</h2>
+    <div class="goalList">You are an <b>Eco Ranger</b>. Clean <b>ALL the litter</b> in each area before the
+      timer runs out, recycle it into the correct bins, and rescue trapped animals.
+      Every piece you recycle <b>heals the world</b> — watch it transform!</div>
+    <h3>Controls</h3>
+    <div class="ctrlGrid">
+      <div class="ctrl"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move (Arrow keys work too)</span></div>
+      <div class="ctrl"><kbd>Mouse</kbd><span>Look around &amp; aim the crosshair</span></div>
+      <div class="ctrl"><kbd>SPACE</kbd><span>Jump — press again mid-air to <b>Double&nbsp;Jump</b></span></div>
+      <div class="ctrl"><kbd>SHIFT</kbd><span>Sprint</span></div>
+      <div class="ctrl"><kbd>CLICK</kbd><span><b>Grapple!</b> Hold on a ⭕ ring to swing, release to fly.
+        Click glowing litter to yank it into your bag</span></div>
+      <div class="ctrl"><kbd>E</kbd><span>Interact — rescue animals, recycle your bag at the station</span></div>
+      <div class="ctrl"><kbd>V</kbd><span>Hold for <b>Future Vision</b> — preview the healed world</span></div>
+      <div class="ctrl"><kbd>P</kbd><span>Pause</span></div>
+    </div>
+    <h3>Tips</h3>
+    <div class="goalList">
+      • Your bag holds <b>12 items</b> — empty it at the ♻ <b>Recycling Station</b> (press <kbd>E</kbd>) for bonus points.<br>
+      • Chain pickups fast to build an <b>Eco Combo</b> — up to <b>×10 score</b>!<br>
+      • Litter on rooftops or floating on water? <b>Grapple it</b> from a distance.<br>
+      • Grab power-ups: 🧲 Magnet · 👟 Speed · ❄ Freeze Time · ⭐ Double Score.<br>
+      • Find the hidden <b>🏆 Golden Bottle</b> in every level!
+    </div>
+    <div class="cardBtns"><button class="btn small" id="howtoBack">Got it!</button></div>
+  </div>
+</div>
+
+<!-- LEVEL INTRO -->
+<div id="levelIntro" class="overlay hidden">
+  <div id="liNum"></div>
+  <div id="liName"></div>
+  <div id="liSub"></div>
+  <div id="liGoals"></div>
+  <button class="btn" id="liStart">Start Mission</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="objectives" class="hudPanel"></div>
+  <div id="timerWrap" class="hudPanel">
+    <div id="levelTag"></div>
+    <div id="timer">3:00</div>
+    <div id="frozenTag">❄ TIME FROZEN</div>
+  </div>
+  <div id="scoreWrap" class="hudPanel">
+    <div id="score">0</div>
+    <div id="combo"></div>
+    <div id="comboBarWrap"><div id="comboBar"></div></div>
+  </div>
+  <div id="meters" class="hudPanel">
+    <div class="meterRow"><div class="meterLabel"><span>❤ Health</span><span id="healthTxt">100</span></div>
+      <div class="meterTrack"><div class="meterFill" id="healthFill"></div></div></div>
+    <div class="meterRow"><div class="meterLabel"><span>🎒 Bag</span><span id="bagTxt">0 / 12</span></div>
+      <div class="meterTrack"><div class="meterFill" id="bagFill"></div></div></div>
+    <div class="meterRow"><div class="meterLabel"><span>🌱 Environment</span><span id="envTxt">0%</span></div>
+      <div class="meterTrack"><div class="meterFill" id="envFill"></div></div></div>
+  </div>
+  <div id="minimapWrap" class="hudPanel">
+    <canvas id="minimap" width="150" height="150"></canvas>
+    <div id="minimapLbl">MAP</div>
+  </div>
+  <div id="crosshair"></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="tutorialCard" class="hidden"></div>
+  <div id="announce"></div>
+  <div id="powerupRow"></div>
+</div>
+<div id="damageFlash"></div>
+<div id="visionTint"><div class="vLbl">✦ FUTURE VISION — THIS IS WHAT YOU'RE FIGHTING FOR ✦</div></div>
+
+<!-- PAUSE -->
+<div id="pauseScreen" class="overlay hidden">
+  <div class="bigHead">⏸ Paused</div>
+  <div style="display:flex; flex-direction:column; gap:14px; align-items:center;">
+    <button class="btn" id="resumeBtn">Resume</button>
+    <button class="btn ghost small" id="restartBtn">Restart Level</button>
+    <button class="btn ghost small" id="pauseHowto">How to Play</button>
+    <button class="btn ghost small" id="quitBtn">Quit to Menu</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="resultsScreen" class="overlay hidden">
+  <div class="card" style="max-width: 560px;">
+    <h2 id="resHead">✅ Area Restored!</h2>
+    <table class="statTable" id="resTable"></table>
+    <div class="badgeRow" id="resBadge"></div>
+    <div class="ecoFact" id="resFact"></div>
+    <div class="cardBtns"><button class="btn" id="nextBtn">Next Mission ➜</button></div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameoverScreen" class="overlay hidden">
+  <div class="bigHead">⏰ Time's Up!</div>
+  <div style="color: var(--cream); font-size: 17px; margin-bottom: 22px;" id="goMsg"></div>
+  <div style="display:flex; gap:14px;">
+    <button class="btn" id="retryBtn">Try Again</button>
+    <button class="btn ghost small" id="goQuitBtn" style="align-self:center;">Menu</button>
+  </div>
+</div>
+
+<!-- VICTORY -->
+<div id="victoryScreen" class="overlay hidden">
+  <div id="cert">
+    <div class="cTop">CERTIFICATE OF ACHIEVEMENT</div>
+    <h1>🏆 Planet Defender 🏆</h1>
+    <div>This certifies that Eco Ranger</div>
+    <div class="cName" id="certName">Ranger</div>
+    <div class="cMsg">cleaned every street, park, beach and river — recycled
+      <b id="certTrash">0</b> pieces of litter, rescued <b id="certAnimals">0</b> animals,
+      and defeated the Garbage Monster to restore the planet.</div>
+    <div class="cBadges" id="certBadges"></div>
+    <div class="cScore">Final Score: <span id="certScore">0</span></div>
+    <div class="cQuote">“Small Actions. Big Impact. Save Our Planet.”</div>
+    <div class="cardBtns" style="margin-top:20px;">
+      <button class="btn small" id="againBtn">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
