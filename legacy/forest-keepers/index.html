@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forest Keepers — Humara Desh Wildlife Reserve</title>
+<style>
+  :root {
+    --green-d: #0d2b18; --green: #1e5a34; --green-l: #35c04a;
+    --gold: #ffd76a; --gold-d: #c9a227; --cream: #f2ead6; --red: #e74c3c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0d2b18;
+    font-family: 'Segoe UI', 'Trebuchet MS', system-ui, sans-serif; user-select: none; }
+  #game { position: fixed; inset: 0; }
+  #game canvas { display: block; }
+
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 20; }
+  .hidden { display: none !important; }
+
+  /* ============ START SCREEN ============ */
+  #startScreen { background: radial-gradient(ellipse at 50% 120%, #2c6e42 0%, #16452a 45%, #0a2314 100%);
+    transition: opacity .8s; z-index: 40; }
+  #startScreen.fading { opacity: 0; pointer-events: none; }
+  #leaves { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .leaf { position: absolute; top: -8%; font-size: 26px; animation: leafFall linear infinite; opacity: .8; }
+  @keyframes leafFall {
+    0%   { transform: translateY(0) translateX(0) rotate(0deg); }
+    25%  { transform: translateY(28vh) translateX(6vw) rotate(120deg); }
+    50%  { transform: translateY(55vh) translateX(-4vw) rotate(240deg); }
+    75%  { transform: translateY(80vh) translateX(5vw) rotate(300deg); }
+    100% { transform: translateY(112vh) translateX(-2vw) rotate(420deg); }
+  }
+  #banner { position: relative; background: linear-gradient(#1e5a34, #153f24);
+    border: 4px solid var(--gold-d); border-radius: 10px; padding: 14px 46px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); transform-origin: 50% -60px;
+    animation: swing 4.2s ease-in-out infinite; }
+  #banner::before, #banner::after { content: ''; position: absolute; top: -58px; width: 4px; height: 58px;
+    background: repeating-linear-gradient(#d8c9a0, #d8c9a0 6px, #b09f76 6px, #b09f76 12px); }
+  #banner::before { left: 12%; } #banner::after { right: 12%; }
+  @keyframes swing { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  #banner h2 { color: var(--gold); font-family: Georgia, serif; letter-spacing: 3px;
+    font-size: clamp(16px, 2.6vw, 30px); text-shadow: 0 2px 6px rgba(0,0,0,.6); white-space: nowrap; }
+  #gameTitle { margin-top: 40px; font-family: Georgia, serif; font-weight: bold;
+    font-size: clamp(44px, 8vw, 96px); letter-spacing: 4px;
+    background: linear-gradient(180deg, #eaffea 0%, #8ce89a 40%, #2e8b57 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.55)); animation: titlePulse 3s ease-in-out infinite; }
+  @keyframes titlePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+  #tagline { color: #cfe8cf; font-size: clamp(14px, 1.8vw, 20px); margin-top: 8px; font-style: italic; }
+  #chips { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; justify-content: center; }
+  .chip { background: rgba(255,255,255,.1); border: 1px solid rgba(255,215,106,.45); color: var(--cream);
+    padding: 7px 16px; border-radius: 999px; font-size: 14px; backdrop-filter: blur(4px); }
+  #startBtn { margin-top: 34px; font-size: clamp(20px, 2.6vw, 28px); font-weight: bold; letter-spacing: 2px;
+    color: #08240f; background: linear-gradient(180deg, #7dffa0, #35c04a 55%, #1d8f2e);
+    border: none; border-radius: 14px; padding: 18px 64px; cursor: pointer;
+    box-shadow: 0 8px 0 #135e1e, 0 16px 34px rgba(0,0,0,.5); transition: transform .12s, box-shadow .12s;
+    animation: btnGlow 2s ease-in-out infinite; }
+  @keyframes btnGlow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.16); } }
+  #startBtn:hover { transform: translateY(-3px) scale(1.04); }
+  #startBtn:active { transform: translateY(3px); box-shadow: 0 3px 0 #135e1e; }
+  #resetSave { margin-top: 14px; background: none; border: none; color: #7fae8b; cursor: pointer;
+    font-size: 13px; text-decoration: underline; }
+  #howto { margin-top: 26px; display: flex; gap: 26px; flex-wrap: wrap; justify-content: center;
+    background: rgba(0,0,0,.3); border-radius: 14px; padding: 14px 26px; max-width: 860px; }
+  .how { color: var(--cream); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  kbd { background: #223c2b; border: 1px solid #5e8a6b; border-bottom-width: 3px; border-radius: 6px;
+    padding: 2px 9px; font-family: inherit; font-weight: bold; color: var(--gold); font-size: 13px; }
+
+  /* ============ HUD ============ */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 15; }
+  .card { background: rgba(10, 32, 18, .78); border: 1px solid rgba(255,215,106,.35);
+    border-radius: 12px; color: var(--cream); backdrop-filter: blur(5px); }
+  #levelCard { position: absolute; top: 16px; left: 16px; padding: 10px 18px; }
+  #levelCard .lv { font-weight: bold; color: var(--gold); font-size: 17px; letter-spacing: 1px; }
+  #levelCard .obj { font-size: 14px; margin-top: 3px; }
+  #timerWrap { position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    width: min(360px, 42vw); padding: 8px 14px 10px; text-align: center; }
+  #timerText { font-weight: bold; font-size: 20px; color: var(--gold); font-variant-numeric: tabular-nums; }
+  #timerBarBg { height: 9px; background: rgba(255,255,255,.15); border-radius: 6px; margin-top: 5px; overflow: hidden; }
+  #timerBar { height: 100%; width: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, #35c04a, #a8e063); transition: width .2s linear; }
+  #timerWrap.low #timerBar { background: linear-gradient(90deg, #e74c3c, #ff8a5c); }
+  #timerWrap.low { animation: lowPulse .8s ease-in-out infinite; }
+  @keyframes lowPulse { 0%,100% { box-shadow: 0 0 0 rgba(231,76,60,0); } 50% { box-shadow: 0 0 22px rgba(231,76,60,.8); } }
+  #tokenCard { position: absolute; top: 16px; right: 16px; padding: 10px 18px; font-weight: bold;
+    font-size: 18px; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+  #tokenCard .coin { display: inline-block; animation: coinSpin 3s linear infinite; font-size: 22px; }
+  @keyframes coinSpin { 0%,100% { transform: rotateY(0); } 50% { transform: rotateY(180deg); } }
+  #tokenCard.bump { animation: bump .35s ease; }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  #tokenDelta { position: absolute; top: 64px; right: 26px; font-weight: bold; font-size: 17px;
+    color: #8ce89a; opacity: 0; pointer-events: none; }
+  #tokenDelta.show { animation: floatUp 1.2s ease forwards; }
+  #tokenDelta.neg { color: #ff8a7a; }
+  @keyframes floatUp { 0% { opacity: 0; transform: translateY(8px); } 20% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-26px); } }
+  #bagCard { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: min(320px, 60vw); padding: 9px 16px 11px; text-align: center; }
+  #bagText { font-weight: bold; font-size: 16px; }
+  #bagBarBg { height: 10px; background: rgba(255,255,255,.15); border-radius: 6px; margin-top: 5px; overflow: hidden; }
+  #bagBar { height: 100%; width: 0%; border-radius: 6px; transition: width .25s;
+    background: linear-gradient(90deg, #c9a227, #ffd76a); }
+  #bagCard.full { border-color: var(--red); animation: lowPulse 1s ease-in-out infinite; }
+  #bagCard.full #bagBar { background: linear-gradient(90deg, #e74c3c, #ff8a5c); }
+  #prompt { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+    padding: 11px 22px; font-size: 16px; font-weight: 600; white-space: nowrap;
+    animation: promptIn .25s ease; }
+  @keyframes promptIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  #controlsHint { position: absolute; bottom: 16px; right: 16px; padding: 8px 14px; font-size: 12px;
+    color: #b9d4bd; line-height: 1.7; text-align: right; }
+  #msgArea { position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: 90vw; }
+  .msg { padding: 10px 24px; font-size: 16px; font-weight: 600; animation: msgIn .3s ease; text-align: center; }
+  .msg.warn { border-color: var(--red); color: #ffd3cc; }
+  .msg.good { border-color: var(--green-l); color: #d2ffd9; }
+  .msg.hint { border-color: #6ab7ff; color: #d8ecff; }
+  .msg.out { animation: msgOut .4s ease forwards; }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(-12px) scale(.92); } to { opacity: 1; transform: none; } }
+  @keyframes msgOut { to { opacity: 0; transform: translateY(-10px) scale(.94); } }
+
+  /* ============ LEVEL INTRO ============ */
+  #levelIntro { pointer-events: none; z-index: 25; text-align: center; }
+  #levelIntro .big { font-family: Georgia, serif; font-weight: bold; font-size: clamp(46px, 9vw, 110px);
+    color: var(--gold); text-shadow: 0 6px 24px rgba(0,0,0,.7), 0 0 40px rgba(255,215,106,.35);
+    animation: introZoom .7s cubic-bezier(.2, 1.6, .4, 1); }
+  #levelIntro .sub { font-size: clamp(17px, 2.6vw, 26px); color: var(--cream); margin-top: 10px;
+    text-shadow: 0 3px 12px rgba(0,0,0,.8); animation: introZoom .7s .12s cubic-bezier(.2,1.6,.4,1) backwards; }
+  @keyframes introZoom { from { opacity: 0; transform: scale(2.2); } to { opacity: 1; transform: scale(1); } }
+
+  /* ============ SHOP ============ */
+  #shopOverlay { background: rgba(5, 18, 10, .72); backdrop-filter: blur(6px); z-index: 30; }
+  #shopPanel { width: min(880px, 94vw); max-height: 88vh; overflow-y: auto; border-radius: 18px;
+    background: linear-gradient(180deg, #14381f, #0d2716); border: 2px solid var(--gold-d);
+    box-shadow: 0 24px 80px rgba(0,0,0,.7); padding: 0 26px 26px; animation: shopIn .35s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes shopIn { from { opacity: 0; transform: translateY(36px) scale(.95); } to { opacity: 1; transform: none; } }
+  #shopHead { position: sticky; top: 0; background: linear-gradient(#14381f 75%, transparent); padding: 22px 0 12px;
+    display: flex; align-items: center; justify-content: space-between; z-index: 2; }
+  #shopHead h2 { color: var(--gold); font-family: Georgia, serif; letter-spacing: 2px; font-size: 26px; }
+  #shopTokens { color: var(--gold); font-weight: bold; font-size: 18px; background: rgba(0,0,0,.35);
+    padding: 8px 18px; border-radius: 999px; border: 1px solid var(--gold-d); }
+  #shopClose { background: #23402c; color: var(--cream); border: 1px solid #5e8a6b; border-radius: 10px;
+    font-size: 15px; padding: 8px 18px; cursor: pointer; margin-left: 14px; }
+  #shopClose:hover { background: #2f5439; }
+  .shopSection { color: #9fc4a8; font-size: 13px; letter-spacing: 3px; margin: 18px 0 10px; font-weight: bold; }
+  .shopGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .item { background: rgba(255,255,255,.06); border: 1px solid rgba(255,215,106,.25); border-radius: 14px;
+    padding: 16px 14px; text-align: center; color: var(--cream); transition: transform .15s, border-color .15s; }
+  .item:hover { transform: translateY(-3px); border-color: var(--gold); }
+  .item.equipped { border-color: var(--green-l); box-shadow: 0 0 18px rgba(53,192,74,.35); }
+  .item .emoji { font-size: 42px; }
+  .item h3 { font-size: 16px; margin: 8px 0 2px; color: var(--gold); }
+  .item .cap { font-size: 13px; color: #a8d4b0; margin-bottom: 4px; }
+  .item .desc { font-size: 12px; color: #b9c9bd; min-height: 30px; }
+  .item button { margin-top: 10px; width: 100%; padding: 9px 0; border: none; border-radius: 9px;
+    font-weight: bold; font-size: 14px; cursor: pointer; }
+  .item button.buy { background: linear-gradient(180deg, #ffd76a, #c9a227); color: #3a2a05; }
+  .item button.buy:hover { filter: brightness(1.12); }
+  .item button.poor { background: #3a4440; color: #77857c; cursor: not-allowed; }
+  .item button.equip { background: #23402c; color: var(--cream); border: 1px solid #5e8a6b; }
+  .item button.equipped { background: var(--green-l); color: #08240f; cursor: default; }
+
+  /* ============ FAIL / WIN ============ */
+  #failOverlay { background: rgba(20, 5, 5, .78); backdrop-filter: blur(5px); z-index: 32; }
+  #failOverlay h1 { font-size: clamp(40px, 7vw, 76px); color: #ff8a7a; font-family: Georgia, serif;
+    text-shadow: 0 6px 22px rgba(0,0,0,.8); animation: introZoom .55s cubic-bezier(.2,1.5,.4,1); }
+  #failOverlay p { color: var(--cream); font-size: 18px; margin: 14px 0 26px; text-align: center; line-height: 1.6; }
+  .bigBtn { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #08240f;
+    background: linear-gradient(180deg, #7dffa0, #35c04a 55%, #1d8f2e); border: none; border-radius: 12px;
+    padding: 14px 46px; cursor: pointer; box-shadow: 0 6px 0 #135e1e, 0 12px 26px rgba(0,0,0,.5); transition: transform .12s; }
+  .bigBtn:hover { transform: translateY(-2px) scale(1.03); }
+  .bigBtn.alt { background: linear-gradient(180deg, #ffe9a8, #ffd76a 55%, #c9a227); box-shadow: 0 6px 0 #8a6f12, 0 12px 26px rgba(0,0,0,.5); }
+  #winOverlay { background: rgba(8, 24, 12, .82); backdrop-filter: blur(6px); z-index: 34; overflow: hidden; }
+  #winOverlay h1 { font-family: Georgia, serif; font-size: clamp(52px, 9vw, 108px);
+    background: linear-gradient(180deg, #fff6d8, #ffd76a 50%, #e8a33d);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,.7)); animation: introZoom .8s cubic-bezier(.2,1.6,.4,1); }
+  #winOverlay h2 { color: var(--cream); font-size: clamp(16px, 2.4vw, 24px); margin-top: 6px; font-style: italic; }
+  #winStats { display: flex; gap: 18px; margin: 30px 0; flex-wrap: wrap; justify-content: center; }
+  .stat { background: rgba(255,255,255,.08); border: 1px solid var(--gold-d); border-radius: 14px;
+    padding: 16px 28px; text-align: center; color: var(--cream); }
+  .stat .num { font-size: 32px; font-weight: bold; color: var(--gold); }
+  .stat .lbl { font-size: 13px; color: #b9d4bd; margin-top: 3px; }
+  .confetti { position: absolute; top: -5%; width: 12px; height: 12px; opacity: .9; animation: confFall linear infinite; }
+  @keyframes confFall {
+    0% { transform: translateY(0) rotate(0) scale(1); }
+    100% { transform: translateY(110vh) rotate(720deg) scale(.7); }
+  }
+  #winBtns { display: flex; gap: 16px; }
+
+  /* pointer-lock / click hint */
+  #clickHint { position: fixed; left: 50%; top: 44%; transform: translateX(-50%); z-index: 14;
+    padding: 12px 26px; font-size: 17px; font-weight: 600; pointer-events: none;
+    animation: btnGlow 1.6s ease-in-out infinite; }
+
+  /* danger vignette when the clock runs low */
+  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 12; opacity: 0; transition: opacity .5s;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(200, 30, 20, .45) 100%); }
+  #vignette.on { opacity: 1; animation: vignettePulse 1s ease-in-out infinite; }
+  @keyframes vignettePulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+  /* combo streak popup */
+  #combo { position: fixed; left: 50%; top: 34%; transform: translateX(-50%); z-index: 16;
+    font-family: Georgia, serif; font-weight: bold; font-size: 34px; color: var(--gold);
+    text-shadow: 0 3px 10px rgba(0,0,0,.7), 0 0 24px rgba(255,215,106,.5); pointer-events: none; opacity: 0; }
+  #combo.pop { animation: comboPop .9s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes comboPop { 0% { opacity: 0; transform: translateX(-50%) scale(.4); }
+    25% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    70% { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-24px); } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+  <div id="game"></div>
+
+  <!-- START SCREEN -->
+  <div id="startScreen" class="overlay">
+    <div id="leaves"></div>
+    <div id="banner"><h2>🌿 HUMARA DESH WILDLIFE RESERVE 🌿</h2></div>
+    <div id="gameTitle">FOREST KEEPERS</div>
+    <div id="tagline">Clean the forest. Protect the wild. Become a legend.</div>
+    <div id="chips">
+      <span class="chip">🗑️ 7 Timed Patrols</span>
+      <span class="chip">🐘 Rhinos · Tigers · Elephants</span>
+      <span class="chip">👮 Stop the Poachers</span>
+      <span class="chip">🪙 Wildlife Tokens</span>
+      <span class="chip">🏪 Ranger Shop</span>
+    </div>
+    <button id="startBtn">▶ START EXPEDITION</button>
+    <button id="resetSave" class="hidden">reset saved progress</button>
+    <div id="howto">
+      <div class="how"><kbd>W A S D</kbd> / <kbd>↑←↓→</kbd> move</div>
+      <div class="how">🖱️ mouse to look around</div>
+      <div class="how"><kbd>Shift</kbd> run</div>
+      <div class="how"><kbd>E</kbd> interact / arrest</div>
+      <div class="how">🖱️ wheel to zoom</div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="levelCard" class="card">
+      <div class="lv" id="levelLabel">FREE ROAM</div>
+      <div class="obj" id="objectiveLabel">Visit the podium to start Level 1</div>
+    </div>
+    <div id="timerWrap" class="card hidden">
+      <div id="timerText">0:00</div>
+      <div id="timerBarBg"><div id="timerBar"></div></div>
+    </div>
+    <div id="tokenCard" class="card"><span class="coin">🪙</span><span id="tokenText">0</span></div>
+    <div id="tokenDelta"></div>
+    <div id="bagCard" class="card">
+      <div id="bagText">🎒 0 / 5</div>
+      <div id="bagBarBg"><div id="bagBar"></div></div>
+      <div id="distText" style="font-size:12px;color:#ffd76a;margin-top:4px;font-weight:600"></div>
+    </div>
+    <div id="prompt" class="card hidden"></div>
+    <div id="controlsHint" class="card">WASD / arrows · move&nbsp;&nbsp;Shift · run<br>E · interact&nbsp;&nbsp;wheel · zoom</div>
+    <div id="msgArea"></div>
+  </div>
+  <div id="clickHint" class="card hidden">🖱️ Click to look around — or hold &amp; drag</div>
+  <div id="vignette"></div>
+  <div id="combo"></div>
+
+  <!-- LEVEL INTRO -->
+  <div id="levelIntro" class="overlay hidden">
+    <div class="big" id="introBig">LEVEL 1</div>
+    <div class="sub" id="introSub"></div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="shopOverlay" class="overlay hidden">
+    <div id="shopPanel">
+      <div id="shopHead">
+        <h2>🏪 RANGER SHOP</h2>
+        <div style="display:flex;align-items:center">
+          <div id="shopTokens">🪙 0</div>
+          <button id="shopClose">✕ Close</button>
+        </div>
+      </div>
+      <div class="shopSection">— GARBAGE BAGS —</div>
+      <div class="shopGrid" id="bagGrid"></div>
+      <div class="shopSection">— RANGER GEAR —</div>
+      <div class="shopGrid" id="gearGrid"></div>
+    </div>
+  </div>
+
+  <!-- FAIL -->
+  <div id="failOverlay" class="overlay hidden">
+    <h1>⏰ TIME'S UP!</h1>
+    <p id="failText"></p>
+    <button class="bigBtn" id="retryBtn">↻ TRY AGAIN</button>
+  </div>
+
+  <!-- WIN -->
+  <div id="winOverlay" class="overlay hidden">
+    <div id="confettiBox"></div>
+    <h1>🏆 YOU WIN! 🏆</h1>
+    <h2>Guardian of Humara Desh Wildlife Reserve</h2>
+    <div id="winStats"></div>
+    <div id="winBtns">
+      <button class="bigBtn" id="freeRoamBtn">🌲 FREE ROAM</button>
+      <button class="bigBtn alt" id="againBtn">↻ PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
