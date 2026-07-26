@@ -100,9 +100,13 @@ export class World {
 
     this.particles = new Particles(this.root);
 
+    // every level has a boss guarding the far side of the area
+    this.bossPos = cfg.boss ? new THREE.Vector3(0, 0, -cfg.bounds * 0.45) : null;
+
     this.buildLights();
     this.buildGround();
     this.buildEnvironment();
+    if (cfg.boss) this.buildBoss(this.bossPos, cfg.boss);
     this.buildStation();
     this.buildFlowers();
     this.placeGameplay();
@@ -214,6 +218,7 @@ export class World {
         const x = rand(-B + 12, B - 12), z = rand(-B + 12, B - 12);
         if (Math.abs(z - 14) < 10 || Math.abs(z + 14) < 10) continue;
         if (Math.hypot(x, z) > B - 8 || Math.hypot(x - 6, z - 26) < 14) continue;
+        if (this.bossPos && Math.hypot(x - this.bossPos.x, z - this.bossPos.z) < 16) continue;
         if (this.boxes.some(b => x > b.min.x - 8 && x < b.max.x + 8 && z > b.min.z - 8 && z < b.max.z + 8)) continue;
         const w = rand(6, 10), h = rand(5, 12), d = rand(6, 10);
         const bld = M.makeBuilding(w, h, d, palette[placed % palette.length]);
@@ -287,8 +292,6 @@ export class World {
       }
       this.addSmoke(new THREE.Vector3(-20, 4, -20));
       this.addSmoke(new THREE.Vector3(24, 4, -24));
-      // THE BOSS
-      this.buildBoss(new THREE.Vector3(0, 0, -26));
     }
 
     // generic ambient smoke for dirty look
@@ -430,7 +433,7 @@ export class World {
       if (this.pointInBox(x, z, 1.2)) continue;
       if (new THREE.Vector2(x - this.stationPos.x, z - this.stationPos.z).length() < 7) continue;
       if (this.cfg.env === 'river' && Math.abs(z) < 7) continue;
-      if (this.cfg.env === 'river' && Math.hypot(x, z + 26) < 12) continue;
+      if (this.bossPos && Math.hypot(x - this.bossPos.x, z - this.bossPos.z) < 10) continue;
       if (this.cfg.env === 'beach' && x > this.waterX - 2) continue;
       return new THREE.Vector3(x, 0, z);
     }
@@ -608,15 +611,25 @@ export class World {
   }
 
   // ---------------- boss ----------------
-  buildBoss(pos) {
-    const g = M.makeBoss();
+  buildBoss(pos, bossCfg) {
+    const g = M.makeBoss(bossCfg.variant);
     g.position.copy(pos);
+    g.scale.setScalar(bossCfg.scale);
     const core = g.userData.core;
     M.tagRoot(core, 'core');
     this.root.add(g);
+    // floating name banner (readable from both sides)
+    const bannerY = 6.4 * bossCfg.scale + 1.4;
+    for (const rot of [0, Math.PI]) {
+      const banner = M.makeTextPlane(`⚔ ${bossCfg.name}`, { w: 6.5, h: 0.95, bg: '#b3402f', fontPx: 68 });
+      banner.position.copy(pos).setY(bannerY);
+      banner.rotation.y = rot;
+      this.root.add(banner);
+    }
     this.boss = {
-      group: g, pos, hp: 3, state: 'active', coreOpen: false, coreTimer: 0,
-      throwT: 4, refs: g.userData,
+      group: g, pos, cfg: bossCfg, hp: bossCfg.hits, maxHp: bossCfg.hits,
+      state: 'active', coreOpen: false, coreTimer: 0, throwT: 4,
+      announced: false, refs: g.userData,
     };
     // arena warning ring
     const ring = new THREE.Mesh(new THREE.RingGeometry(13.4, 14, 40),
@@ -658,11 +671,13 @@ export class World {
   spawnBossTrash() {
     const b = this.boss;
     const a = rand(0, TAU), r = rand(5, 11);
-    const types = ['plastic', 'metal', 'ewaste', 'barrel'];
+    const types = this.cfg.trashMix;
     const type = types[Math.floor(rand(0, types.length))];
     const g = M.makeTrash(type);
     const pos = new THREE.Vector3(b.pos.x + Math.cos(a) * r, 0, b.pos.z + Math.sin(a) * r);
-    if (Math.abs(pos.z) < 6.5) pos.z = Math.sign(pos.z || 1) * 7;
+    if (this.cfg.env === 'river' && Math.abs(pos.z) < 6.5) pos.z = Math.sign(pos.z || 1) * 7;
+    const rr = Math.hypot(pos.x, pos.z), BB = this.cfg.bounds - 3;
+    if (rr > BB) { pos.x *= BB / rr; pos.z *= BB / rr; }
     g.position.copy(pos);
     M.tagRoot(g, 'trash');
     this.root.add(g);
@@ -685,7 +700,7 @@ export class World {
     const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), M.mat(0x5d6650, { roughness: 1 }));
     ball.castShadow = true;
     this.root.add(ball);
-    this.projectiles.push({ ball, tele, start, dest, t: 0, dur: 1.25, game });
+    this.projectiles.push({ ball, tele, start, dest, t: 0, dur: 1.25, dmg: b.cfg.dmg, game });
   }
 
   // ---------------- queries used by the player ----------------
@@ -741,7 +756,7 @@ export class World {
     // boss body
     if (this.boss && this.boss.state !== 'dead') {
       const dx = pos.x - this.boss.pos.x, dz = pos.z - this.boss.pos.z;
-      const rr = 3.2 + radius;
+      const rr = 3.2 * this.boss.cfg.scale + radius;
       const d2 = dx * dx + dz * dz;
       if (d2 < rr * rr && d2 > 1e-6) {
         const d = Math.sqrt(d2);
@@ -824,7 +839,6 @@ export class World {
   // ---------------- environment transformation ----------------
   applyEnvHealth(h, instant = false) {
     this.envH = h;
-    const lerpC = (m, a, b) => m.color.lerpColors(new THREE.Color(a), new THREE.Color(b), h);
     // sky + fog
     const sky = new THREE.Color(this.pal.sky[0]).lerp(new THREE.Color(this.pal.sky[1]), h);
     this.scene.background.copy(sky);
@@ -832,7 +846,7 @@ export class World {
     this.scene.fog.density = this.pal.fog[0] + (this.pal.fog[1] - this.pal.fog[0]) * h;
     this.sun.intensity = this.pal.sun[0] + (this.pal.sun[1] - this.pal.sun[0]) * h;
     this.hemi.intensity = 0.7 + h * 0.5;
-    lerpC(this.groundMat, this.pal.ground[0], this.pal.ground[1]);
+    this.groundMat.color.lerpColors(new THREE.Color(this.pal.ground[0]), new THREE.Color(this.pal.ground[1]), h);
     // trees
     const leafC = new THREE.Color(0x6b6448).lerp(new THREE.Color(0x2f8f3a), h);
     const leafS = 0.72 + h * 0.33;
@@ -1035,7 +1049,7 @@ export class World {
       p.tele.material.opacity = 0.35 + Math.sin(T * 12) * 0.25;
       if (k >= 1) {
         if (playerPos.distanceTo(p.dest) < 2.2)
-          game.damage(20, p.dest, 'The monster hit you! Keep moving!');
+          game.damage(p.dmg, p.dest, 'The monster hit you! Keep moving!');
         this.particles.burst(p.dest.clone().setY(0.5), '💥', 8, { size: 0.5 });
         this.root.remove(p.ball, p.tele);
         this.projectiles.splice(i, 1);
@@ -1060,6 +1074,10 @@ export class World {
     refs.body.rotation.y = Math.sin(this.time * 0.6) * 0.15;
     refs.body.position.y = Math.sin(this.time * 1.4) * 0.15;
     const inArena = playerPos.distanceTo(b.pos) < 34;
+    if (inArena && !b.announced) {
+      b.announced = true;
+      game.onBossEncounter(b.cfg.name);
+    }
     if (b.state === 'active') {
       refs.arms.lArm.rotation.x = Math.sin(this.time * 1.2) * 0.4;
       refs.arms.rArm.rotation.x = -Math.sin(this.time * 1.2) * 0.4;
@@ -1067,7 +1085,7 @@ export class World {
       if (inArena) {
         b.throwT -= dt;
         if (b.throwT <= 0) {
-          b.throwT = rand(3.5, 5.5);
+          b.throwT = rand(b.cfg.throwT[0], b.cfg.throwT[1]);
           this.bossThrowAt(playerPos, game);
         }
       }
@@ -1085,10 +1103,11 @@ export class World {
         game.onBossCoreClosed();
       }
     }
-    // boss sheds litter to fuel the fight
+    // boss sheds litter only when the level doesn't have enough left to stun it
     b.shedT = (b.shedT || 6) - dt;
     const liveTrash = this.trash.filter(t => !t.collected).length;
-    if (b.shedT <= 0 && liveTrash < 14 && b.state === 'active') {
+    const available = liveTrash + game.bag.length;
+    if (b.shedT <= 0 && available < b.cfg.coreNeed + 1 && b.state === 'active') {
       b.shedT = 7;
       this.spawnBossTrash();
       this.particles.burst(b.pos.clone().setY(4), '🗑️', 3, { size: 0.5 });

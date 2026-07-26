@@ -34,9 +34,11 @@ export class UI {
     this.el.liNum.textContent = `MISSION ${cfg.id} OF 5`;
     this.el.liName.textContent = cfg.name;
     this.el.liSub.textContent = cfg.sub;
-    const goals = [`🗑 Recycle <b>all ${cfg.trash} pieces of litter</b> before time runs out`];
+    const goals = [
+      `⚔️ <b>BOSS: Defeat ${cfg.boss.name}</b> — recycle <b>${cfg.boss.coreNeed} litter</b> to stun it, then grapple its glowing core${cfg.boss.hits > 1 ? ` <b>${cfg.boss.hits} times</b>` : ''}!`,
+      `🗑 Clean the <b>${cfg.trash} pieces of litter</b> — recycling fuels the boss fight and heals the land`,
+    ];
     if (cfg.animals.length) goals.push(`🐾 Rescue <b>${cfg.animals.length} trapped animal${cfg.animals.length > 1 ? 's' : ''}</b>`);
-    if (cfg.hazards && cfg.hazards.boss) goals.push(`⚔️ <b>Defeat the Garbage Monster</b> — recycle litter to expose its core, then grapple it!`);
     goals.push(`🏆 Find the hidden <b>Golden Bottle</b> (bonus)`);
     goals.push(`⏱ Time limit: <b>${Math.floor(cfg.time / 60)}:${String(cfg.time % 60).padStart(2, '0')}</b>`);
     this.el.liGoals.innerHTML = goals.join('<br>');
@@ -74,9 +76,9 @@ export class UI {
     if (g.animalsTotal > 0) lines.push(done(g.animalsRescued >= g.animalsTotal, `Animals rescued: ${g.animalsRescued}/${g.animalsTotal}`));
     if (g.world.boss) {
       const b = g.world.boss;
-      lines.push(done(b.state === 'dead', `Garbage Monster: ${'💚'.repeat(b.hp)}${'🖤'.repeat(3 - b.hp)}`));
+      lines.push(done(b.state === 'dead', `${b.cfg.name}: ${'💚'.repeat(b.hp)}${'🖤'.repeat(b.maxHp - b.hp)}`));
       if (b.coreOpen) lines.push(`<span style="color:#7dffa0">⚡ CORE EXPOSED — GRAPPLE IT!</span>`);
-      else if (b.state !== 'dead') lines.push(`&nbsp;&nbsp;Recycle ${g.coreNeed - g.recycledSinceCore} more to stun it`);
+      else if (b.state !== 'dead') lines.push(`&nbsp;&nbsp;Recycle ${Math.max(0, g.coreNeed - g.recycledSinceCore)} more to stun it`);
     }
     lines.push(done(g.goldenFound, `Hidden Golden Bottle`));
     this.el.objectives.innerHTML = lines.join('<br>');

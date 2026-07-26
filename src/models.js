@@ -565,16 +565,25 @@ export function makeRainbow() {
   return g;
 }
 
-// ---------- BOSS : The Garbage Monster ----------
-export function makeBoss() {
+// ---------- BOSSES : one pollution monster per level ----------
+const BOSS_VARIANTS = {
+  imp:     { junk: [0x5d7a4a, 0x6a5a48, 0x4a6050, 0x6d6d3a, 0x556b4e], eye: 0xffd76a, rough: 1 },
+  oil:     { junk: [0x1e2124, 0x2c2f33, 0x3a3d40, 0x24272b, 0x141619], eye: 0xff9f43, rough: 0.25 },
+  smog:    { junk: [0x6a6f74, 0x7d8287, 0x565b60, 0x8a8f94, 0x4a4f54], eye: 0xbfe4ff, rough: 0.95 },
+  kraken:  { junk: [0x2e6e8a, 0x3a8aa8, 0x255a70, 0x4aa0bc, 0x1e4a5e], eye: 0xa4ff43, rough: 0.6 },
+  garbage: { junk: [0x5d6650, 0x6a5a48, 0x4a5560, 0x6d6d3a, 0x555b4e], eye: 0xffb300, rough: 1 },
+};
+
+export function makeBoss(variant = 'garbage') {
+  const V = BOSS_VARIANTS[variant] || BOSS_VARIANTS.garbage;
   const g = new THREE.Group();
-  const junkColors = [0x5d6650, 0x6a5a48, 0x4a5560, 0x6d6d3a, 0x555b4e];
+  const junkColors = V.junk;
   const body = new THREE.Group();
   // lumpy trash body
   for (let i = 0; i < 26; i++) {
     const s = 0.7 + Math.random() * 1.1;
     const geo = Math.random() < 0.5 ? new THREE.BoxGeometry(s, s * 0.8, s * 0.9) : new THREE.IcosahedronGeometry(s * 0.6, 0);
-    const m = new THREE.Mesh(geo, mat(junkColors[i % junkColors.length], { roughness: 1 }));
+    const m = new THREE.Mesh(geo, mat(junkColors[i % junkColors.length], { roughness: V.rough }));
     const a = Math.random() * Math.PI * 2, r = Math.random() * 1.5, y = 1 + Math.random() * 3.6;
     m.position.set(Math.cos(a) * r * (1 - y / 7), y, Math.sin(a) * r * (1 - y / 7));
     m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
@@ -591,7 +600,7 @@ export function makeBoss() {
   const eyes = [];
   for (const s of [-1, 1]) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10),
-      mat(0xfff3ae, { emissive: 0xffb300, emissiveIntensity: 1.6 }));
+      mat(0xfff3ae, { emissive: V.eye, emissiveIntensity: 1.6 }));
     eye.position.set(0.6 * s, 4.35, 1.15);
     g.add(eye); eyes.push(eye);
     const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: 0x331100 }));
@@ -602,7 +611,7 @@ export function makeBoss() {
   for (const s of [-1, 1]) {
     const arm = new THREE.Group();
     for (let i = 0; i < 4; i++) {
-      const seg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 - i * 0.08, 0), mat(junkColors[i % junkColors.length], { roughness: 1 }));
+      const seg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 - i * 0.08, 0), mat(junkColors[i % junkColors.length], { roughness: V.rough }));
       seg.position.set(0, -i * 0.75, 0);
       arm.add(seg);
     }

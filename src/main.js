@@ -127,7 +127,7 @@ class Game {
     this.envTarget = 0; this.envHealthDisplay = 0;
     this.milestones = new Set();
     this.recycledSinceCore = 0;
-    this.coreNeed = 8;
+    this.coreNeed = this.cfg.boss.coreNeed;
     this.levelStats = { trashPts: 0, recycleBonus: 0, wildlifePts: 0, goldenPts: 0 };
     this.celebrateT = 0;
     this.flags = { moved: 0, doubleJumped: false, swung: false, recycledOnce: false, rescuedOnce: false };
@@ -232,8 +232,6 @@ class Game {
       ui.announce('⚡ CORE EXPOSED — GRAPPLE IT!');
       ui.toast('The monster is stunned! Aim at its glowing <b>green core</b> and <kbd>CLICK</kbd> to grapple it!', 6);
     }
-    // level completion (non-boss levels)
-    if (!boss && this.recycled >= this.trashTotal) this.completeLevel();
   }
 
   rescueAnimal(animal) {
@@ -298,12 +296,18 @@ class Game {
     const boss = this.world.boss;
     this.score += 500;
     if (boss.state === 'dead') {
-      ui.announce('🎉 GARBAGE MONSTER DEFEATED!');
-      this.score += 1500;
+      ui.announce(`🎉 ${boss.cfg.name.toUpperCase()} DEFEATED!`);
+      this.score += 500 * boss.maxHp;
       setTimeout(() => this.completeLevel(), 1500);
     } else {
       ui.announce(`💥 CORE RIPPED OUT! ${boss.hp} TO GO!`);
     }
+  }
+
+  onBossEncounter(name) {
+    audio.bossRoar();
+    ui.announce(`⚔️ ${name.toUpperCase()}!`);
+    ui.toast(`This is <b>${name}</b>! Recycle <b>${this.coreNeed} litter</b> at the ♻ station to STUN it — then <kbd>CLICK</kbd> its glowing green core to grapple it out!`, 6);
   }
 
   onBossCoreClosed() {
@@ -315,6 +319,7 @@ class Game {
   onJump() {}
   onDoubleJump() { this.flags.doubleJumped = true; }
   onSwingStart() { this.flags.swung = true; }
+
 
   // ---------- completion ----------
   completeLevel() {
@@ -391,7 +396,8 @@ class Game {
       { html: 'Now try swinging: aim at a green ⭕ <b>Grapple Ring</b> up high, <b>HOLD CLICK</b> to swing, release to fly!', done: () => this.flags.swung },
       { html: 'Take your litter to the ♻ <b>RECYCLING STATION</b> (green square on the map, bottom-left) and press <kbd>E</kbd>', done: () => this.flags.recycledOnce },
       { html: 'An animal is trapped in a net! Find the pink dot on the map, walk close and press <kbd>E</kbd> to rescue it', done: () => this.flags.rescuedOnce },
-      { html: 'Recycle <b>ALL the litter</b> before time runs out — watch the campus come back to life! 🌱 (Hold <kbd>V</kbd> to preview the future)', done: () => this.recycled >= this.trashTotal },
+      { html: `Boss time! The <b>Litter Imp</b> (red dot on the map) is guarding the campus. Recycle <b>${this.cfg.boss.coreNeed} litter</b> to STUN it!`, done: () => this.world.boss.coreOpen || this.world.boss.state === 'dead' },
+      { html: 'Its glowing <b>green core</b> is exposed! Get close, aim your crosshair at the core and <kbd>CLICK</kbd> to grapple it out! ⚡', done: () => this.world.boss.state === 'dead' },
     ];
   }
 
@@ -418,9 +424,8 @@ class Game {
     // env health smoothing → live world transformation
     if (this.state === 'play') {
       const boss = this.world.boss;
-      this.envTarget = boss
-        ? Math.min(1, (this.recycled / this.trashTotal) * 0.65 + ((3 - boss.hp) / 3) * 0.35)
-        : this.recycled / this.trashTotal;
+      this.envTarget = Math.min(1,
+        (this.recycled / this.trashTotal) * 0.65 + ((boss.maxHp - boss.hp) / boss.maxHp) * 0.35);
     }
     const rate = this.state === 'celebrate' ? 2.2 : 0.9;
     this.envHealthDisplay += (this.envTarget - this.envHealthDisplay) * Math.min(1, dt * rate);

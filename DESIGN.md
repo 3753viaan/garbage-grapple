@@ -95,22 +95,24 @@ water clears · butterflies and birds appear · NPCs start cheering — and at *
 
 ## 8. Levels & Difficulty Curve (easy → hard)
 
-| # | Environment | Litter | Time | New challenge | Rescue | Badge (SDG) |
+| # | Environment | Litter | Time | New challenge | Boss (stun cost × core pulls) | Badge (SDG) |
 |---|---|---|---|---|---|---|
-| 1 | **School Campus** | 10 | 4:00 | Guided tutorial, no hazards | 1 bird | Eco Hero (SDG 4/12) |
-| 2 | **Public Park** | 16 | 3:30 | Oil slicks (slippery), falling branches | rabbit, squirrel | Nature Warrior (SDG 15) |
-| 3 | **City Streets** | 22 | 3:30 | Moving traffic, toxic gas, rooftop litter (grapple traversal) | 2 pigeons | Recycling Master (SDG 11) |
-| 4 | **Beach** | 26 | 3:00 | Falling coconuts, floating litter over water (grapple-only), fishing nets | 2 turtles | River Guardian (SDG 14) |
-| 5 | **River Bank — BOSS** | 20 + boss spawns | 4:30 | **The Garbage Monster** | deer | Planet Defender (SDG 13) |
+| 1 | **School Campus** | 10 | 4:00 | Guided tutorial, no hazards | **Litter Imp** (5 × 1) | Eco Hero (SDG 4/12) |
+| 2 | **Public Park** | 16 | 3:30 | Oil slicks, falling branches | **Oil Sludge Beast** (5 × 2) | Nature Warrior (SDG 15) |
+| 3 | **City Streets** | 22 | 3:30 | Traffic, toxic gas, rooftop litter | **Smog Golem** (7 × 2) | Recycling Master (SDG 11) |
+| 4 | **Beach** | 26 | 3:00 | Coconuts, floating litter (grapple-only), nets | **Plastic Kraken** (6 × 3) | River Guardian (SDG 14) |
+| 5 | **River Bank** | 20 | 4:30 | River crossing, toxic barrels | **The Garbage Monster** (6 × 3) | Planet Defender (SDG 13) |
 
 Difficulty levers per level: less time per litter piece, more/faster hazards, litter placed
-higher and farther (forcing grapple mastery), health pressure, and finally the boss.
+higher and farther (forcing grapple mastery), health pressure, and bosses that grow bigger,
+hit harder (10 → 20 damage), throw faster, and need more core-pulls.
 
-**Boss — The Garbage Monster:** a hulking golem of compacted trash guarding the river. It hurls
-garbage projectiles (telegraphed shadows — dodge!). It continuously sheds litter; every **8 pieces
-recycled** overloads it — its glowing **green core** is exposed: **grapple the core** to rip a
-chunk of pollution out. Three core-pulls and it collapses into a pile of neatly sorted
-recyclables. The river clears, the deer returns, fireworks of leaves.
+**Boss fights (every level):** a pollution monster guards the far side of every area. It hurls
+garbage projectiles (telegraphed landing rings — dodge!). Recycling the level's **stun cost**
+at the station overloads it — its glowing **green core** is exposed for 12 seconds:
+**grapple the core** to rip a chunk of pollution out. Enough core-pulls and it collapses into
+neatly sorted recyclables; defeating the boss completes the level. If the level runs out of
+litter mid-fight, the boss sheds more. The finale monster's defeat fully restores the river.
 
 ## 9. Health & Hazards
 
