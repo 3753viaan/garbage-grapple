@@ -42,7 +42,7 @@ export class Player {
 
     this.yaw = 0;                // camera starts behind the player, facing level center
     this.pitch = -0.18;
-    this.camDist = 6.8;
+    this.camDist = 6.0;
 
     // grapple
     this.grapple = null;         // { mode:'swing'|'pull', anchor:Vector3, ropeLen, visTimer, targetGroup }
@@ -287,18 +287,20 @@ export class Player {
       this.rope.visible = this.hook.visible = false;
     }
 
-    // ---- camera follow ----
-    // view direction comes straight from yaw/pitch so the crosshair can aim
-    // anywhere (including up at grapple rings) even when the camera position
-    // is clamped above the ground.
-    const camTarget = this.pos.clone().add(new THREE.Vector3(0, 1.7, 0));
+    // ---- camera: Fortnite-style over-the-shoulder, rigidly locked ----
+    // View direction comes straight from yaw/pitch so the crosshair can aim
+    // anywhere even when the camera position is clamped above the ground.
+    // The shoulder offset keeps the character left of the crosshair, and the
+    // camera snaps to its pose every frame (no lag) so aim feels locked.
+    const shoulder = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.85);
+    const camTarget = this.pos.clone().add(new THREE.Vector3(0, 1.65, 0)).add(shoulder);
     const fdir = new THREE.Vector3(
       -Math.sin(this.yaw) * Math.cos(this.pitch),
       Math.sin(this.pitch),
       -Math.cos(this.yaw) * Math.cos(this.pitch));
     const desired = camTarget.clone().addScaledVector(fdir, -this.camDist);
     if (desired.y < 0.5) desired.y = 0.5;
-    this.camera.position.lerp(desired, Math.min(1, dt * 10));
+    this.camera.position.copy(desired);
     this.camera.lookAt(this.camera.position.clone().add(fdir));
 
     // fell out of world safety
