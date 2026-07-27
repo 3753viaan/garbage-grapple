@@ -133,6 +133,7 @@ class Game {
     this.flags = { moved: 0, doubleJumped: false, latched: false, recycledOnce: false, rescuedOnce: false };
     this.tutorialStep = this.cfg.tutorial ? 0 : -1;
     this._lastTick = -1;
+    this._guide = { item: null, dirX: 0, dirZ: -1 };   // guide trail state (reset per level)
 
     ui.setLevelIntro(this.cfg);
     ui.show('intro');
@@ -514,7 +515,7 @@ class Game {
     }
 
     this.updateTutorial();
-    this.updateGuide();
+    this.updateGuide(dt);
     ui.updateHUD(this);
     ui.drawMinimap(this.world, this.player, this);
     input.endFrame();
@@ -548,20 +549,30 @@ const guideTrail = (() => {
   return g;
 })();
 
-Game.prototype.updateGuide = function () {
+Game.prototype.updateGuide = function (dt) {
   const g = guideTrail;
   if (this.state !== 'play') { for (const m of g.children) m.visible = false; return; }
+  if (!this._guide) this._guide = { item: null, dirX: 0, dirZ: -1 };
+  const gd = this._guide;
   let target = null, color = 0xffd76a;
   if (!this.bagFree()) {
     target = this.world.stationPos;              // bag full → lead to the station
     color = 0x34c759;
   } else {
-    let bd = Infinity;
+    // sticky nearest-litter target: only switch when another piece is CLEARLY
+    // closer, so the trail doesn't flicker between two similar candidates
+    let cur = gd.item;
+    if (cur && (cur.collected || cur.pulling)) cur = null;
+    let best = null, bd = Infinity;
     for (const t of this.world.trash) {
       if (t.collected || t.pulling) continue;
       const d = t.group.position.distanceTo(this.player.pos);
-      if (d < bd) { bd = d; target = t.group.position; }
+      if (d < bd) { bd = d; best = t; }
     }
+    if (!cur) cur = best;
+    else if (best && best !== cur && bd < cur.group.position.distanceTo(this.player.pos) - 3) cur = best;
+    gd.item = cur;
+    if (cur) target = cur.group.position;
     if (!target) {
       const b = this.world.boss;
       if (b && b.state !== 'dead') { target = b.pos; color = 0xff5f57; }
@@ -574,8 +585,14 @@ Game.prototype.updateGuide = function () {
   mat.opacity = 0.55 + Math.sin(performance.now() * 0.005) * 0.2;
   const p = this.player.pos;
   const dx = target.x - p.x, dz = target.z - p.z;
-  const dist = Math.hypot(dx, dz);
-  const ux = dx / (dist || 1), uz = dz / (dist || 1);
+  const dist = Math.hypot(dx, dz) || 1;
+  // smooth the trail direction so target changes sweep instead of snapping
+  const k = 1 - Math.exp(-(dt || 0.016) * 9);
+  let ux = gd.dirX + (dx / dist - gd.dirX) * k;
+  let uz = gd.dirZ + (dz / dist - gd.dirZ) * k;
+  const ul = Math.hypot(ux, uz) || 1;
+  ux /= ul; uz /= ul;
+  gd.dirX = ux; gd.dirZ = uz;
   const ang = Math.atan2(-ux, -uz);              // chevron tip faces the target
   const flow = (performance.now() * 0.0035 % 1) * TRAIL_SPACING;   // arrows flow toward it
   let i = 0;
