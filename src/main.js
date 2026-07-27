@@ -506,7 +506,7 @@ class Game {
       else if (k === 'golden') prompt = `<kbd>CLICK</kbd> to grab the Golden Bottle! 🏆`;
     }
     ui.prompt(prompt);
-    ui.crosshair(!!this.player.aimHit);
+    ui.crosshair(!!this.player.aimHit && this.player.aimHit.kind !== 'ground');
 
     if (input.interactPressed) {
       if (nearAnimal) this.rescueAnimal(nearAnimal);
@@ -514,6 +514,7 @@ class Game {
     }
 
     this.updateTutorial();
+    this.updateGuide();
     ui.updateHUD(this);
     ui.drawMinimap(this.world, this.player, this);
     input.endFrame();
@@ -521,6 +522,52 @@ class Game {
 }
 
 const game = new Game();
+
+// ---------------- guide arrow (points to nearest litter / station / boss) ----------------
+const guideArrow = (() => {
+  const g = new THREE.Group();
+  const m = new THREE.MeshBasicMaterial({ color: 0xffd76a });
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 10), m);
+  head.rotation.x = Math.PI / 2;
+  head.position.z = 0.45;
+  g.add(head);
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), m);
+  tail.rotation.x = Math.PI / 2;
+  tail.position.z = 0.05;
+  g.add(tail);
+  g.visible = false;
+  g.userData.mat = m;
+  scene.add(g);
+  return g;
+})();
+
+Game.prototype.updateGuide = function () {
+  const g = guideArrow;
+  if (this.state !== 'play') { g.visible = false; return; }
+  let target = null, color = 0xffd76a;
+  if (!this.bagFree()) {
+    target = this.world.stationPos;              // bag full → head to the station
+    color = 0x34c759;
+  } else {
+    let bd = Infinity;
+    for (const t of this.world.trash) {
+      if (t.collected || t.pulling) continue;
+      const d = t.group.position.distanceTo(this.player.pos);
+      if (d < bd) { bd = d; target = t.group.position; }
+    }
+    if (!target) {
+      const b = this.world.boss;
+      if (b && b.state !== 'dead') { target = b.pos; color = 0xff5f57; }
+      else if (this.world.golden && !this.world.golden.taken) { target = this.world.golden.group.position; color = 0xfff3ae; }
+    }
+  }
+  if (!target) { g.visible = false; return; }
+  g.visible = true;
+  g.userData.mat.color.setHex(color);
+  const p = this.player.pos;
+  g.position.set(p.x, p.y + 2.8 + Math.sin(performance.now() * 0.004) * 0.12, p.z);
+  g.rotation.y = Math.atan2(target.x - p.x, target.z - p.z);
+};
 
 // ---------------- menu wiring ----------------
 const $ = id => document.getElementById(id);

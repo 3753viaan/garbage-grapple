@@ -137,6 +137,8 @@ export class World {
     const ground = new THREE.Mesh(new THREE.CircleGeometry(R, 48), this.groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
+    M.tagRoot(ground, 'ground');   // grapple-dash target
+    this.groundMesh = ground;
     this.root.add(ground);
   }
 
@@ -285,8 +287,10 @@ export class World {
         const plank = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, 1.7), M.mat(0x8f6b40, { roughness: 1 }));
         plank.position.set(x, 1.1, z);
         plank.castShadow = plank.receiveShadow = true;
+        M.tagRoot(plank, 'wall');   // latchable — zip across the broken bridge
         this.root.add(plank);
         this.boxes.push(this.boxFor(plank.position, w, 1.25, 1.7, 1.1 - 0.15));
+        this.walls.push(plank);
       }
       for (let i = 0; i < 14; i++) this.scatterTree(9, B - 8, env, true);
       for (let i = 0; i < 8; i++) {
@@ -693,6 +697,7 @@ export class World {
     for (const t of this.trash) if (!t.collected && !t.pulling) out.push(t.group);
     if (this.golden && !this.golden.taken) out.push(this.golden.group);
     if (this.boss && this.boss.coreOpen) out.push(this.boss.refs.core);
+    out.push(this.groundMesh);   // last: nearer tagged targets win by ray distance
     return out;
   }
 

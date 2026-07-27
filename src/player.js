@@ -112,6 +112,11 @@ export class Player {
       this.grapple = { mode: 'zip', anchor: hit.point.clone(), t: 0 };
       this.audio.grappleHit();
       game.onLatch();
+    } else if (kind === 'ground') {
+      // grapple-dash across the ground (ignore clicks right at your feet)
+      if (hit.point.distanceTo(this.pos) < 5) return;
+      this.grapple = { mode: 'zip', anchor: hit.point.clone().add(new THREE.Vector3(0, 1, 0)), t: 0, ground: true };
+      this.audio.grappleHit();
     } else if (kind === 'trash') {
       if (!game.bagFree()) { game.bagFullNotice(); return; }
       const item = hit.root.userData.item;
@@ -183,10 +188,16 @@ export class Player {
       const dir = this.grapple.anchor.clone().sub(chest);
       const dist = dir.length();
       if (dist < 1.6 || this.grapple.t > 2.5) {
-        // arrived: pop upward so you can mantle onto the roof — or latch again to climb higher
         dir.normalize();
-        this.vel.copy(dir.multiplyScalar(4));
-        this.vel.y = 8.4;
+        if (this.grapple.ground) {
+          // ground dash: keep momentum with a small hop
+          this.vel.copy(dir.multiplyScalar(7));
+          this.vel.y = 3.2;
+        } else {
+          // wall latch: pop upward so you can mantle onto the roof — or latch again to climb
+          this.vel.copy(dir.multiplyScalar(4));
+          this.vel.y = 8.4;
+        }
         this.grapple = null;
         this.audio.release();
       } else {
