@@ -25,7 +25,7 @@ export const LEVELS = [
   {
     id: 1, name: 'School Campus', env: 'campus',
     sub: 'Your own school grounds are littered after the fair. Show everyone how an Eco Ranger works!',
-    time: 240, trash: 10, bagCap: 12,
+    time: 180, trash: 10, bagCap: 12,
     trashMix: ['plastic', 'paper', 'organic', 'metal'],
     animals: [{ type: 'bird', name: 'Sparrow' }],
     hazards: {},
@@ -39,7 +39,7 @@ export const LEVELS = [
   {
     id: 2, name: 'Public Park', env: 'park',
     sub: 'Picnic season left the park a mess. Careful — spilled oil is slippery and dead branches are falling!',
-    time: 210, trash: 16, bagCap: 12,
+    time: 180, trash: 16, bagCap: 12,
     trashMix: ['plastic', 'paper', 'organic', 'metal', 'glass'],
     animals: [{ type: 'rabbit', name: 'Rabbit' }, { type: 'squirrel', name: 'Squirrel' }],
     hazards: { slicks: 3, droppers: 3 },
@@ -52,7 +52,7 @@ export const LEVELS = [
   {
     id: 3, name: 'City Streets', env: 'city',
     sub: 'Rush hour in a smog-choked city. Dodge the traffic, avoid toxic fumes, and grapple litter off the rooftops!',
-    time: 210, trash: 22, bagCap: 12,
+    time: 180, trash: 22, bagCap: 12,
     trashMix: ['plastic', 'paper', 'metal', 'glass', 'ewaste'],
     animals: [{ type: 'bird', name: 'Pigeon' }, { type: 'bird', name: 'Pigeon' }],
     hazards: { cars: 4, gas: 3 },
@@ -65,7 +65,7 @@ export const LEVELS = [
   {
     id: 4, name: 'Sunset Beach', env: 'beach',
     sub: 'Plastic is choking the sea. Grapple litter floating on the waves, free the trapped turtles — and mind the coconuts!',
-    time: 195, trash: 26, bagCap: 12,
+    time: 180, trash: 26, bagCap: 12,
     trashMix: ['plastic', 'paper', 'metal', 'glass', 'organic', 'net'],
     animals: [{ type: 'turtle', name: 'Turtle' }, { type: 'turtle', name: 'Turtle' }],
     hazards: { droppers: 4, water: true },
@@ -78,7 +78,7 @@ export const LEVELS = [
   {
     id: 5, name: 'River Bank — THE GARBAGE MONSTER', env: 'river',
     sub: 'All the dumped waste has fused into a MONSTER! Recycle its litter to expose its core, then GRAPPLE THE CORE!',
-    time: 270, trash: 20, bagCap: 12,
+    time: 180, trash: 20, bagCap: 12,
     trashMix: ['plastic', 'metal', 'glass', 'ewaste', 'barrel'],
     animals: [{ type: 'deer', name: 'Deer' }],
     hazards: { water: true },
