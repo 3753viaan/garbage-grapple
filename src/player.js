@@ -29,6 +29,14 @@ export class Player {
     this.refs = refs;
     scene.add(group);
 
+    // premium outfits pulse-glow in-game, matching their shop preview
+    this.outfitGlow = (cosmetics.outfit && cosmetics.outfit.emissive) || null;
+    if (this.outfitGlow) {
+      this.glowLight = new THREE.PointLight(this.outfitGlow, 1.2, 6, 2);
+      this.glowLight.position.set(0, 1.15, 0);
+      this.model.add(this.glowLight);
+    }
+
     this.pos = world.playerSpawn.clone();
     this.vel = new THREE.Vector3();
     this.onGround = true;
@@ -285,6 +293,13 @@ export class Player {
 
     // invulnerability blink
     this.model.visible = this.invuln <= 0 || Math.floor(this.invuln * 12) % 2 === 0;
+
+    // pulsing outfit glow (same rhythm as the shop preview)
+    if (this.outfitGlow) {
+      const k = 0.5 + 0.5 * Math.sin(performance.now() * 0.0042);
+      this.refs.torso.material.emissiveIntensity = 0.3 + 0.65 * k;
+      this.glowLight.intensity = 0.5 + 1.4 * k;
+    }
 
     // ---- rope visuals ---- (re-check grapple: arrival may have released it)
     let ropeTo = null;
