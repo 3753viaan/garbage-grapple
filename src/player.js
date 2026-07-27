@@ -66,7 +66,8 @@ export class Player {
     this.hook = new THREE.Mesh(
       new THREE.SphereGeometry(0.11, 8, 8),
       new THREE.MeshBasicMaterial({ color: (cosmetics.rope && cosmetics.rope.hook) || 0x7dffa0 }));
-    this.ropeAnimated = !!(cosmetics.rope && cosmetics.rope.animated);
+    this.ropeFx = (cosmetics.rope && (cosmetics.rope.fx || (cosmetics.rope.animated ? 'rainbow' : null))) || null;
+    this.outfitHue = !!(cosmetics.outfit && cosmetics.outfit.hueAnim);
     this.hook.visible = false;
     scene.add(this.hook);
 
@@ -300,6 +301,14 @@ export class Player {
       this.refs.torso.material.emissiveIntensity = 0.3 + 0.65 * k;
       this.glowLight.intensity = 0.5 + 1.4 * k;
     }
+    // Prism Legend: the whole outfit cycles through the rainbow
+    if (this.outfitHue) {
+      const hue = (performance.now() * 0.00025) % 1;
+      const m = this.refs.torso.material;
+      m.color.setHSL(hue, 0.85, 0.55);
+      if (m.emissive) m.emissive.setHSL(hue, 0.9, 0.4);
+      if (this.glowLight) this.glowLight.color.setHSL(hue, 0.9, 0.5);
+    }
 
     // ---- rope visuals ---- (re-check grapple: arrival may have released it)
     let ropeTo = null;
@@ -307,10 +316,26 @@ export class Player {
     else if (this.grapple && this.grapple.mode === 'pull' && this.grapple.targetGroup)
       ropeTo = this.grapple.targetGroup.getWorldPosition(new THREE.Vector3());
     if (ropeTo) {
-      if (this.ropeAnimated) {
-        const hue = (performance.now() * 0.0006) % 1;
-        this.rope.material.color.setHSL(hue, 0.9, 0.7);
-        this.hook.material.color.setHSL((hue + 0.3) % 1, 0.9, 0.75);
+      if (this.ropeFx) {
+        const t = performance.now();
+        const rc = this.rope.material.color, hc = this.hook.material.color;
+        if (this.ropeFx === 'rainbow') {
+          const hue = (t * 0.0006) % 1;
+          rc.setHSL(hue, 0.9, 0.7);
+          hc.setHSL((hue + 0.3) % 1, 0.9, 0.75);
+        } else if (this.ropeFx === 'fire') {
+          const k = 0.5 + 0.5 * Math.sin(t * 0.02);
+          rc.setHSL(0.03 + 0.06 * k, 1, 0.5 + 0.15 * k);
+          hc.setHSL(0.09 * k, 1, 0.6);
+        } else if (this.ropeFx === 'electric') {
+          const flash = Math.random() < 0.25;
+          rc.setHex(flash ? 0xffffff : 0x9adcff);
+          hc.setHex(flash ? 0x4aa8ff : 0xffffff);
+        } else if (this.ropeFx === 'galaxy') {
+          const k = 0.5 + 0.5 * Math.sin(t * 0.003);
+          rc.setHSL(0.62 + 0.13 * k, 0.85, 0.6);
+          hc.setHSL(0.75 - 0.13 * k, 0.85, 0.7);
+        }
       }
       const from = this.handPos();
       const mid = from.clone().add(ropeTo).multiplyScalar(0.5);

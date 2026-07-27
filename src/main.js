@@ -104,6 +104,10 @@ const OUTFITS = {
   lava:    { name: 'Lava Ranger 🔥', price: 500, cap: 0x14161a, shirt: 0xd6473f, pants: 0x3a1c14, emissive: 0x8a1a0a },
   ice:     { name: 'Ice Crystal ❄️',  price: 500, cap: 0xffffff, shirt: 0x9adcff, pants: 0x4a7a9a, emissive: 0x1e4a8a },
   neon:    { name: 'Neon Pulse ⚡',   price: 700, cap: 0x101214, shirt: 0x34ff70, pants: 0x14161a, emissive: 0x1f8a3d },
+  royal:   { name: 'Royal Emperor 👑', price: 900, cap: 0xffd76a, shirt: 0x6a2f8a, pants: 0x2a1440, emissive: 0x8a5cd6 },
+  storm:   { name: 'Storm Bringer ⛈️', price: 1000, cap: 0x14161a, shirt: 0x1e4a8a, pants: 0x101214, emissive: 0x4aa8ff },
+  cosmic:  { name: 'Cosmic Guardian 🌌', price: 1200, cap: 0x2a1440, shirt: 0x3a1c6a, pants: 0x14082a, emissive: 0x7a4aff },
+  prism:   { name: 'Prism Legend 🌈', price: 1500, cap: 0xffffff, shirt: 0xff5f8f, pants: 0x2c2f33, emissive: 0xffffff, hueAnim: true },
 };
 const ROPES = {
   eco:     { name: 'Eco Rope',       price: 0,   color: 0xd8ffe2, hook: 0x7dffa0 },
@@ -112,7 +116,11 @@ const ROPES = {
   ember:   { name: 'Ember Rope',     price: 250, color: 0xffb08a, hook: 0xff5f57 },
   frost:   { name: 'Frost Rope',     price: 250, color: 0xe0f7ff, hook: 0x9adcff },
   gold:    { name: 'Golden Rope',    price: 300, color: 0xffe9a0, hook: 0xffd76a },
-  rainbow: { name: 'Rainbow Rope 🌈', price: 500, color: 0xff5f8f, hook: 0xffffff, animated: true },
+  rainbow: { name: 'Rainbow Rope 🌈', price: 500, color: 0xff5f8f, hook: 0xffffff, fx: 'rainbow' },
+  shadow:  { name: 'Shadow Rope 🌑',  price: 600, color: 0x2c2f33, hook: 0xb17aff },
+  fire:    { name: 'Blazing Rope 🔥', price: 750, color: 0xff9800, hook: 0xff5f57, fx: 'fire' },
+  electric:{ name: 'Lightning Rope ⚡', price: 900, color: 0x9adcff, hook: 0xffffff, fx: 'electric' },
+  galaxy:  { name: 'Galaxy Rope 🌌',  price: 1100, color: 0x7a4aff, hook: 0x4aa8ff, fx: 'galaxy' },
 };
 const TAGS = {
   classic: { name: 'Classic Tag',   price: 0 },
@@ -122,6 +130,10 @@ const TAGS = {
   fire:    { name: 'Fire Glow',     price: 300 },
   gold:    { name: 'Golden Shine',  price: 350 },
   galaxy:  { name: 'Galaxy 🌟',      price: 450 },
+  electric:{ name: 'Electric Shock ⚡', price: 600 },
+  toxic:   { name: 'Toxic Glow ☢️',  price: 700 },
+  diamond: { name: 'Diamond Frost 💎', price: 850 },
+  legend:  { name: 'LEGENDARY 👑',   price: 1200 },
 };
 function readWallet() {
   const base = { coins: 0, owned: ['outfit:classic', 'rope:eco', 'tag:classic'],
@@ -644,6 +656,25 @@ class Game {
         if (Math.random() < dt * 1.6)
           this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35), '🌟', 1,
             { size: 0.28, up: 1, life: 0.8, gravity: 0, speed: 1.2 });
+      } else if (style === 'electric') {
+        const flash = Math.sin(t * 0.02) > 0.55 || Math.random() < 0.06;
+        this.nameTag.material.color.setHex(flash ? 0xffffff : 0x4aa8ff);
+      } else if (style === 'toxic') {
+        const k = 0.5 + 0.5 * Math.sin(t * 0.006);
+        this.nameTag.material.color.setHSL(0.27, 1, 0.45 + 0.25 * k);
+      } else if (style === 'diamond') {
+        const k = 0.5 + 0.5 * Math.sin(t * 0.004);
+        this.nameTag.material.color.setHSL(0.52, 0.25 + 0.35 * k, 0.8 + 0.15 * k);
+        if (Math.random() < dt * 0.8)
+          this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35), '💎', 1,
+            { size: 0.24, up: 0.8, life: 0.7, gravity: 0, speed: 1 });
+      } else if (style === 'legend') {
+        this.nameTag.material.color.setHSL((t * 0.0004) % 1, 0.9, 0.7);
+        const s = 1 + Math.sin(t * 0.008) * 0.1;
+        this.nameTag.scale.set(2.2 * s, 0.55 * s, 1);
+        if (Math.random() < dt * 1.8)
+          this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35),
+            Math.random() < 0.5 ? '👑' : '⭐', 1, { size: 0.28, up: 1, life: 0.8, gravity: 0, speed: 1.3 });
       } else {
         this.nameTag.material.color.set(0xffffff);
       }
@@ -889,12 +920,13 @@ function renderShop() {
     let sw;
     if (cat === 'outfit') {
       // mini outfit disc: cap / shirt / pants bands, shine sweep, glow for emissive gear
-      sw = `<span class="swOutfit${it.emissive ? ' glow' : ''}"
+      sw = `<span class="swOutfit${it.emissive ? ' glow' : ''}${it.hueAnim ? ' hueAnim' : ''}"
         style="--gc:${hex(it.emissive || it.shirt)}; background:linear-gradient(160deg,
         ${hex(it.cap)} 0 38%, ${hex(it.shirt)} 38% 74%, ${hex(it.pants)} 74% 100%)"></span>`;
     } else if (cat === 'rope') {
-      sw = it.animated
-        ? `<span class="swRope rainbowAnim"></span>`
+      const fxClass = { rainbow: 'rainbowAnim', fire: 'fireAnim', electric: 'electricAnim', galaxy: 'galaxyAnim' }[it.fx];
+      sw = fxClass
+        ? `<span class="swRope ${fxClass}"></span>`
         : `<span class="swRope" style="background:linear-gradient(90deg, ${hex(it.color)}, ${hex(it.hook)})"></span>`;
     } else {
       // live animated preview of the name tag style

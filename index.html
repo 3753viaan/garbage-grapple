@@ -126,6 +126,21 @@
   @keyframes galaxyShift {
     0%, 100% { color: #b17aff; text-shadow: 0 0 8px #7a4aff; }
     50% { color: #4aa8ff; text-shadow: 0 0 14px #b17aff; } }
+  .swOutfit.hueAnim { animation: hueSpin 2.4s linear infinite; }
+  .swRope.fireAnim { background: linear-gradient(90deg, #ff5f57, #ff9800, #ffd76a, #ff9800, #ff5f57);
+    background-size: 250% 100%; animation: ropeRainbow 1s linear infinite; }
+  .swRope.electricAnim { background: linear-gradient(90deg, #9adcff, #fff, #4aa8ff, #fff, #9adcff);
+    background-size: 250% 100%; animation: ropeRainbow .5s linear infinite; }
+  .swRope.galaxyAnim { background: linear-gradient(90deg, #7a4aff, #4aa8ff, #b17aff, #7a4aff);
+    background-size: 250% 100%; animation: ropeRainbow 2.4s linear infinite; }
+  .tagPrev.electric { color: #9adcff; animation: elecFlash .4s steps(2) infinite; }
+  @keyframes elecFlash { 50% { color: #fff; text-shadow: 0 0 12px #4aa8ff, 0 0 22px #fff; } }
+  .tagPrev.toxic { color: #9dff43; animation: toxicPulse 1.2s ease-in-out infinite; }
+  @keyframes toxicPulse { 50% { color: #c8ff7a; text-shadow: 0 0 15px #9dff43; } }
+  .tagPrev.diamond { color: #e0f7ff; animation: diamondShimmer 1.7s ease-in-out infinite; }
+  @keyframes diamondShimmer { 50% { color: #fff; text-shadow: 0 0 10px #9adcff, 0 0 18px #fff; } }
+  .tagPrev.legend { color: #ffd76a; text-shadow: 0 0 10px #ffd76a;
+    animation: hueSpin 2s linear infinite, tagPulse 1.1s ease-in-out infinite; }
   .lbRow { display: flex; justify-content: space-between; align-items: center;
     padding: 8px 12px; border-bottom: 1px dashed rgba(125,255,160,.22); font-size: 17px; }
   .lbRow b { color: var(--sun); font-variant-numeric: tabular-nums; }
