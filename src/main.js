@@ -807,23 +807,51 @@ function startGame(fresh) {
 }
 
 // ---------------- leaderboard (persists on this computer) ----------------
+// One row per player: names are matched ignoring case/extra spaces, so
+// "Viyaan", "viyaan" and "Viyaan " are the same person — no duplicate rows.
+const nameKey = n => String(n || 'Eco Ranger').trim().replace(/\s+/g, ' ').toLowerCase();
 function readLB() {
-  try { return JSON.parse(localStorage.getItem('gg-leaderboard')) || { runs: [], bottles: {} }; }
-  catch (e) { return { runs: [], bottles: {} }; }
+  let raw;
+  try { raw = JSON.parse(localStorage.getItem('gg-leaderboard')) || {}; }
+  catch (e) { raw = {}; }
+  // merge any duplicates from older saves: keep each player's BEST time
+  const runs = [];
+  for (const r of (raw.runs || [])) {
+    const ex = runs.find(x => nameKey(x.name) === nameKey(r.name));
+    if (ex) { if (r.time < ex.time) { ex.time = r.time; ex.name = r.name; } }
+    else runs.push({ name: r.name, time: r.time });
+  }
+  runs.sort((a, b) => a.time - b.time);
+  const bottles = {};
+  for (const [n, c] of Object.entries(raw.bottles || {})) {
+    const exName = Object.keys(bottles).find(x => nameKey(x) === nameKey(n));
+    if (exName) bottles[exName] += c;
+    else bottles[n] = c;
+  }
+  return { runs, bottles };
 }
 function writeLB(lb) {
   try { localStorage.setItem('gg-leaderboard', JSON.stringify(lb)); } catch (e) {}
 }
 function recordRun(name, seconds) {
   const lb = readLB();
-  lb.runs.push({ name, time: Math.max(1, Math.round(seconds)) });
+  const t = Math.max(1, Math.round(seconds));
+  const clean = String(name).trim() || 'Eco Ranger';
+  const ex = lb.runs.find(r => nameKey(r.name) === nameKey(clean));
+  if (ex) {
+    if (t < ex.time) { ex.time = t; ex.name = clean; }   // only their best time counts
+  } else {
+    lb.runs.push({ name: clean, time: t });
+  }
   lb.runs.sort((a, b) => a.time - b.time);
   lb.runs = lb.runs.slice(0, 10);
   writeLB(lb);
 }
 function recordBottle(name) {
   const lb = readLB();
-  lb.bottles[name] = (lb.bottles[name] || 0) + 1;
+  const clean = String(name).trim() || 'Eco Ranger';
+  const exName = Object.keys(lb.bottles).find(x => nameKey(x) === nameKey(clean));
+  lb.bottles[exName || clean] = (lb.bottles[exName || clean] || 0) + 1;
   writeLB(lb);
 }
 const escHtml = s => String(s).replace(/[&<>"']/g,
