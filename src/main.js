@@ -97,6 +97,7 @@ class Game {
   constructor() {
     this.state = 'menu';
     this.levelIdx = 0;
+    this.runTime = 0;          // seconds spent across completed levels this run
     this.totalScore = 0;
     this.totals = { recycled: 0, animals: 0, score: 0 };
     this.badges = [];
@@ -122,7 +123,7 @@ class Game {
     // remember progress for this session (quitting to menu keeps it)
     progressState = {
       idx, totalScore: this.totalScore, totals: this.totals,
-      badges: this.badges, name: this.playerName,
+      badges: this.badges, name: this.playerName, runTime: this.runTime,
     };
     if (this.world) this.world.dispose();
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
@@ -273,6 +274,7 @@ class Game {
     this.levelStats.goldenPts = 1000;
     audio.golden();
     ui.announce('🏆 GOLDEN BOTTLE! +1000');
+    recordBottle(this.playerName || 'Eco Ranger');
   }
 
   takePowerup(p) {
@@ -364,11 +366,12 @@ class Game {
     this.totals.animals += this.animalsRescued;
     this.totals.score = this.totalScore;
     this.badges.push(this.cfg.badge.icon);
+    this.runTime += Math.round(this.cfg.time - Math.max(0, this.timeLeft));
     // level is beaten — advance the session progress NOW so quitting from the
     // results screen continues at the NEXT level, not the one just completed
     progressState = (this.levelIdx + 1 < LEVELS.length)
       ? { idx: this.levelIdx + 1, totalScore: this.totalScore, totals: this.totals,
-          badges: this.badges, name: this.playerName }
+          badges: this.badges, name: this.playerName, runTime: this.runTime }
       : null;
     const rows = [
       ['🗑 Litter collected', `+${this.levelStats.trashPts.toLocaleString()}`],
@@ -391,6 +394,8 @@ class Game {
     if (this.state !== 'results') return; // double-click guard
     if (this.levelIdx >= LEVELS.length - 1) {
       progressState = null;
+      // full game completed — record the run on the leaderboard
+      recordRun(this.playerName || 'Eco Ranger', this.runTime);
       audio.stopMusic();
       audio.fanfare();
       ui.victory(this.playerName, this.totals, this.badges);
@@ -677,10 +682,12 @@ function startGame(fresh) {
     game.totalScore = s.totalScore || 0;
     game.totals = s.totals || { recycled: 0, animals: 0, score: 0 };
     game.badges = s.badges || [];
+    game.runTime = s.runTime || 0;
   } else {
     game.totalScore = 0;
     game.totals = { recycled: 0, animals: 0, score: 0 };
     game.badges = [];
+    game.runTime = 0;
   }
   audio.ensure();
   $('startScreen').classList.add('fading');
@@ -689,6 +696,52 @@ function startGame(fresh) {
     game.loadLevel(s && s.idx > 0 ? s.idx : 0);
   }, 550);
 }
+
+// ---------------- leaderboard (persists on this computer) ----------------
+function readLB() {
+  try { return JSON.parse(localStorage.getItem('gg-leaderboard')) || { runs: [], bottles: {} }; }
+  catch (e) { return { runs: [], bottles: {} }; }
+}
+function writeLB(lb) {
+  try { localStorage.setItem('gg-leaderboard', JSON.stringify(lb)); } catch (e) {}
+}
+function recordRun(name, seconds) {
+  const lb = readLB();
+  lb.runs.push({ name, time: Math.max(1, Math.round(seconds)) });
+  lb.runs.sort((a, b) => a.time - b.time);
+  lb.runs = lb.runs.slice(0, 10);
+  writeLB(lb);
+}
+function recordBottle(name) {
+  const lb = readLB();
+  lb.bottles[name] = (lb.bottles[name] || 0) + 1;
+  writeLB(lb);
+}
+const escHtml = s => String(s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function renderLB(tab) {
+  const lb = readLB();
+  $('lbTabTime').className = tab === 'time' ? 'btn small' : 'btn ghost small';
+  $('lbTabBottles').className = tab === 'bottles' ? 'btn small' : 'btn ghost small';
+  const medal = i => ['🥇', '🥈', '🥉'][i] || `&nbsp;${i + 1}.`;
+  let html;
+  if (tab === 'time') {
+    html = lb.runs.length
+      ? lb.runs.map((r, i) => `<div class="lbRow"><span>${medal(i)} ${escHtml(r.name)}</span>
+          <b>${r.time} s&nbsp;&nbsp;(${Math.floor(r.time / 60)}:${String(r.time % 60).padStart(2, '0')})</b></div>`).join('')
+      : `<div class="lbEmpty">No completed runs yet.<br>Beat all 5 levels — the total seconds you take become your record! ⏱</div>`;
+  } else {
+    const rows = Object.entries(lb.bottles).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    html = rows.length
+      ? rows.map(([n, c], i) => `<div class="lbRow"><span>${medal(i)} ${escHtml(n)}</span><b>${c} 🏆</b></div>`).join('')
+      : `<div class="lbEmpty">No Golden Bottles found yet.<br>One is hidden in every level — keep your eyes open! 🏆</div>`;
+  }
+  $('lbList').innerHTML = html;
+}
+$('lbBtn').addEventListener('click', () => { renderLB('time'); ui.overlay('leaderboard', true); });
+$('lbTabTime').addEventListener('click', () => renderLB('time'));
+$('lbTabBottles').addEventListener('click', () => renderLB('bottles'));
+$('lbBack').addEventListener('click', () => ui.overlay('leaderboard', false));
 
 $('playBtn').addEventListener('click', () => startGame(false));
 $('newGameBtn').addEventListener('click', () => {

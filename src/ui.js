@@ -5,7 +5,8 @@ const $ = id => document.getElementById(id);
 export class UI {
   constructor() {
     this.el = {
-      start: $('startScreen'), howto: $('howto'), about: $('about'), intro: $('levelIntro'),
+      start: $('startScreen'), howto: $('howto'), about: $('about'),
+      leaderboard: $('leaderboard'), intro: $('levelIntro'),
       hud: $('hud'), pause: $('pauseScreen'), results: $('resultsScreen'),
       gameover: $('gameoverScreen'), victory: $('victoryScreen'),
       objectives: $('objectives'), timer: $('timer'), levelTag: $('levelTag'),
