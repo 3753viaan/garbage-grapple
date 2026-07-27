@@ -179,7 +179,9 @@ export class Player {
     const speedBoost = game.power.speed > 0 ? 1.45 : 1;
     const inWater = world.isWater(this.pos.x, this.pos.z) && this.pos.y < 0.5;
     const onSlick = this.onGround && world.isSlick(this.pos.x, this.pos.z);
-    let maxSpeed = RUN_SPEED * (sprint ? SPRINT_MULT : 1) * speedBoost * (inWater ? 0.42 : 1);
+    let maxSpeed = RUN_SPEED * (sprint ? SPRINT_MULT : 1) * speedBoost * (inWater ? 0.3 : 1);
+    // wading: legs sink into the water a little
+    this.sink = (this.sink || 0) + (((inWater && this.pos.y < 0.3) ? 0.36 : 0) - (this.sink || 0)) * Math.min(1, dt * 8);
 
     const zipping = this.grapple && this.grapple.mode === 'zip';
     this._zipMode = zipping ? (this.grapple.ground ? 'ground' : 'wall') : null;
@@ -274,6 +276,7 @@ export class Player {
     // ---- character model ----
     // snappy: the character turns INSTANTLY with the mouse (faces camera forward)
     this.model.position.copy(this.pos);
+    this.model.position.y -= this.sink;
     const hSpeed = Math.hypot(this.vel.x, this.vel.z);
     this.faceYaw = zipping ? Math.atan2(this.vel.x, this.vel.z) : this.yaw + Math.PI;
     this.model.rotation.y = this.faceYaw;
@@ -368,7 +371,7 @@ export class Player {
       R.rLeg.rotation.x = -s * 0.95 * k;
       R.lArm.rotation.x = -s * 0.8 * k;
       R.rArm.rotation.x = s * 0.8 * k;
-      this.model.position.y = this.pos.y + Math.abs(Math.sin(this.runPhase)) * 0.06 * k;
+      this.model.position.y = this.pos.y - this.sink + Math.abs(Math.sin(this.runPhase)) * 0.06 * k;
     } else {
       // idle breathe
       const b = Math.sin(performance.now() * 0.002);

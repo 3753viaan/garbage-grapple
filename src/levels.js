@@ -91,7 +91,7 @@ export const LEVELS = [
 ];
 
 export const NPC_CHEERS = [
-  'Thank you, Eco Ranger! 💚', 'Wow, look at the sky clearing!', 'The flowers are back!',
-  'You inspire us all!', 'Our city is beautiful again!', 'The kids can play here again!',
-  'Amazing! Keep going!', 'I can breathe fresh air again!',
+  'Thank you, {name}! 💚', 'Wow, look at the sky clearing!', 'The flowers are back!',
+  'You inspire us all, {name}!', 'Our city is beautiful again!', 'The kids can play here again!',
+  'Amazing, {name}! Keep going!', 'I can breathe fresh air again!', '{name}, you are a hero!',
 ];

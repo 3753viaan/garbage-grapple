@@ -89,6 +89,10 @@ document.addEventListener('pointerlockchange', () => {
 const ui = new UI();
 const audio = new AudioEngine();
 
+// Session-only progress: survives quitting to the menu, but a page refresh or
+// closing the app starts fresh (deliberately NOT persisted to storage).
+let progressState = null;   // { idx, totalScore, totals, badges, name }
+
 class Game {
   constructor() {
     this.state = 'menu';
@@ -115,13 +119,11 @@ class Game {
   loadLevel(idx) {
     this.levelIdx = idx;
     this.cfg = LEVELS[idx];
-    // persist progress so quitting to the menu (or closing the tab) never loses it
-    try {
-      localStorage.setItem('gg-progress', JSON.stringify({
-        idx, totalScore: this.totalScore, totals: this.totals,
-        badges: this.badges, name: this.playerName,
-      }));
-    } catch (e) { /* storage unavailable — progress just won't persist */ }
+    // remember progress for this session (quitting to menu keeps it)
+    progressState = {
+      idx, totalScore: this.totalScore, totals: this.totals,
+      badges: this.badges, name: this.playerName,
+    };
     if (this.world) this.world.dispose();
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
     this.world = new World(scene, this.cfg, audio);
@@ -362,18 +364,12 @@ class Game {
     this.totals.animals += this.animalsRescued;
     this.totals.score = this.totalScore;
     this.badges.push(this.cfg.badge.icon);
-    // level is beaten — advance the save NOW so quitting from the results
-    // screen continues at the NEXT level, not the one just completed
-    try {
-      if (this.levelIdx + 1 < LEVELS.length) {
-        localStorage.setItem('gg-progress', JSON.stringify({
-          idx: this.levelIdx + 1, totalScore: this.totalScore, totals: this.totals,
-          badges: this.badges, name: this.playerName,
-        }));
-      } else {
-        localStorage.removeItem('gg-progress');
-      }
-    } catch (e) {}
+    // level is beaten — advance the session progress NOW so quitting from the
+    // results screen continues at the NEXT level, not the one just completed
+    progressState = (this.levelIdx + 1 < LEVELS.length)
+      ? { idx: this.levelIdx + 1, totalScore: this.totalScore, totals: this.totals,
+          badges: this.badges, name: this.playerName }
+      : null;
     const rows = [
       ['🗑 Litter collected', `+${this.levelStats.trashPts.toLocaleString()}`],
       ['♻ Recycling bonus', `+${this.levelStats.recycleBonus.toLocaleString()}`],
@@ -394,7 +390,7 @@ class Game {
   nextLevel() {
     if (this.state !== 'results') return; // double-click guard
     if (this.levelIdx >= LEVELS.length - 1) {
-      try { localStorage.removeItem('gg-progress'); } catch (e) {}
+      progressState = null;
       audio.stopMusic();
       audio.fanfare();
       ui.victory(this.playerName, this.totals, this.badges);
@@ -472,7 +468,9 @@ class Game {
       if (this.envHealthDisplay >= m && !this.milestones.has(m)) {
         this.milestones.add(m);
         this.world.cheerNPCs();
-        ui.toast(`💬 "${NPC_CHEERS[Math.floor(Math.random() * NPC_CHEERS.length)]}"`, 3);
+        const cheer = NPC_CHEERS[Math.floor(Math.random() * NPC_CHEERS.length)]
+          .replaceAll('{name}', this.playerName || 'Eco Ranger');
+        ui.toast(`💬 "${cheer}"`, 3);
       }
     }
 
@@ -660,9 +658,7 @@ Game.prototype.updateGuide = function (dt) {
 // ---------------- menu wiring ----------------
 const $ = id => document.getElementById(id);
 
-function readProgress() {
-  try { return JSON.parse(localStorage.getItem('gg-progress')); } catch (e) { return null; }
-}
+function readProgress() { return progressState; }
 
 function refreshStartScreen() {
   const s = readProgress();
@@ -694,7 +690,7 @@ function startGame(fresh) {
 
 $('playBtn').addEventListener('click', () => startGame(false));
 $('newGameBtn').addEventListener('click', () => {
-  try { localStorage.removeItem('gg-progress'); } catch (e) {}
+  progressState = null;
   refreshStartScreen();
   startGame(true);
 });
