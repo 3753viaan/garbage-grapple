@@ -158,6 +158,7 @@ class Game {
     progressState = {
       idx, totalScore: this.totalScore, totals: this.totals,
       badges: this.badges, name: this.playerName, runTime: this.runTime,
+      levelCount: this.levelCount,
     };
     if (this.world) this.world.dispose();
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
@@ -414,9 +415,10 @@ class Game {
     this.runTime += Math.round(this.cfg.time - Math.max(0, this.timeLeft));
     // level is beaten — advance the session progress NOW so quitting from the
     // results screen continues at the NEXT level, not the one just completed
-    progressState = (this.levelIdx + 1 < LEVELS.length)
+    progressState = (this.levelIdx + 1 < this.levelCount)
       ? { idx: this.levelIdx + 1, totalScore: this.totalScore, totals: this.totals,
-          badges: this.badges, name: this.playerName, runTime: this.runTime }
+          badges: this.badges, name: this.playerName, runTime: this.runTime,
+          levelCount: this.levelCount }
       : null;
     const rows = [
       ['🗑 Litter collected', `+${this.levelStats.trashPts.toLocaleString()}`],
@@ -429,7 +431,7 @@ class Game {
       ...(perfect ? [['✨ Perfect cleanup', `+${perfect}`]] : []),
       ['TOTAL SCORE', this.totalScore.toLocaleString()],
     ];
-    ui.results(this.cfg, rows, this.levelIdx === LEVELS.length - 1);
+    ui.results(this.cfg, rows, this.levelIdx === (this.levelCount || LEVELS.length) - 1);
     ui.hudVisible(false);
     document.exitPointerLock();
     this.state = 'results';
@@ -437,10 +439,11 @@ class Game {
 
   nextLevel() {
     if (this.state !== 'results') return; // double-click guard
-    if (this.levelIdx >= LEVELS.length - 1) {
+    if (this.levelIdx >= (this.levelCount || LEVELS.length) - 1) {
       progressState = null;
-      // full game completed — record the run on the leaderboard
-      recordRun(this.playerName || 'Eco Ranger', this.runTime);
+      // fastest-run records only count FULL 5-level games (fair comparison)
+      if ((this.levelCount || LEVELS.length) === LEVELS.length)
+        recordRun(this.playerName || 'Eco Ranger', this.runTime);
       audio.stopMusic();
       audio.fanfare();
       ui.victory(this.playerName, this.totals, this.badges);
@@ -732,6 +735,13 @@ const $ = id => document.getElementById(id);
 
 function readProgress() { return progressState; }
 
+// how many levels this run plays (chosen on the start screen, cycles 1–5)
+let levelCount = 5;
+$('levelsBtn').addEventListener('click', () => {
+  levelCount = (levelCount % LEVELS.length) + 1;
+  $('levelsBtn').textContent = `🎮 Levels: ${levelCount}`;
+});
+
 function refreshStartScreen() {
   const s = readProgress();
   const has = !!(s && s.idx > 0);
@@ -748,11 +758,13 @@ function startGame(fresh) {
     game.totals = s.totals || { recycled: 0, animals: 0, score: 0 };
     game.badges = s.badges || [];
     game.runTime = s.runTime || 0;
+    game.levelCount = s.levelCount || levelCount;
   } else {
     game.totalScore = 0;
     game.totals = { recycled: 0, animals: 0, score: 0 };
     game.badges = [];
     game.runTime = 0;
+    game.levelCount = levelCount;
   }
   audio.ensure();
   $('startScreen').classList.add('fading');

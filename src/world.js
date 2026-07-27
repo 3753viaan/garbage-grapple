@@ -169,7 +169,7 @@ export class World {
       this.root.add(school);
       this.boxes.push(this.boxFor(school.position, 18, 7.25, 8));
       this.walls.push(school);
-      const sign = M.makeTextPlane('GREEN VALLEY SCHOOL', { w: 10, h: 1.4, bg: '#1f6b38', fontPx: 60 });
+      const sign = M.makeTextPlane('DPSI', { w: 6, h: 1.5, bg: '#1f6b38', fontPx: 110 });
       sign.position.set(0, 5.2, -B + 18 + 4.05);
       this.root.add(sign);
       for (let i = 0; i < 8; i++) this.scatterTree(10, B - 10, env);
