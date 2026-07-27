@@ -61,10 +61,16 @@ renderer.domElement.addEventListener('mousedown', e => {
   }
 });
 window.addEventListener('mouseup', e => { if (e.button === 0) input.grappleDown = false; });
+// Pointer-lock spike filter: browsers can report a huge bogus movementX/Y right
+// after (re)locking, which whipped the camera around. Ignore deltas for a short
+// window after any lock change and discard any single outlier spike.
+let lockSettleUntil = 0;
 window.addEventListener('mousemove', e => {
-  if (document.pointerLockElement === renderer.domElement) {
-    input.mdx += e.movementX; input.mdy += e.movementY;
-  }
+  if (document.pointerLockElement !== renderer.domElement) return;
+  if (performance.now() < lockSettleUntil) return;
+  const mx = e.movementX, my = e.movementY;
+  if (Math.abs(mx) > 220 || Math.abs(my) > 220) return;   // spike — not a real hand movement
+  input.mdx += mx; input.mdy += my;
 });
 window.addEventListener('contextmenu', e => e.preventDefault());
 function lockPointer() {
@@ -74,6 +80,8 @@ function lockPointer() {
   } catch (e) { /* pointer lock unavailable — game still playable */ }
 }
 document.addEventListener('pointerlockchange', () => {
+  input.mdx = 0; input.mdy = 0;                 // drop anything accumulated across the change
+  lockSettleUntil = performance.now() + 80;     // and ignore the first post-lock deltas
   if (document.pointerLockElement !== renderer.domElement && game.state === 'play') game.pause();
 });
 
