@@ -99,19 +99,29 @@ const OUTFITS = {
   ocean:   { name: 'Ocean Blue',     price: 150, cap: 0x1e4a8a, shirt: 0x2f7fd6, pants: 0x1c2f4a },
   sunset:  { name: 'Sunset Orange',  price: 150, cap: 0xb3402f, shirt: 0xff9f43, pants: 0x6b3a2b },
   shadow:  { name: 'Midnight Shadow', price: 250, cap: 0x14161a, shirt: 0x2c2f33, pants: 0x101214 },
+  candy:   { name: 'Candy Pop',      price: 300, cap: 0xb17aff, shirt: 0xff5f8f, pants: 0x6a2f8a },
   golden:  { name: 'Golden Hero',    price: 400, cap: 0xd9a824, shirt: 0xffd76a, pants: 0x8a6a1a },
+  lava:    { name: 'Lava Ranger 🔥', price: 500, cap: 0x14161a, shirt: 0xd6473f, pants: 0x3a1c14, emissive: 0x8a1a0a },
+  ice:     { name: 'Ice Crystal ❄️',  price: 500, cap: 0xffffff, shirt: 0x9adcff, pants: 0x4a7a9a, emissive: 0x1e4a8a },
+  neon:    { name: 'Neon Pulse ⚡',   price: 700, cap: 0x101214, shirt: 0x34ff70, pants: 0x14161a, emissive: 0x1f8a3d },
 };
 const ROPES = {
-  eco:   { name: 'Eco Rope',       price: 0,   color: 0xd8ffe2, hook: 0x7dffa0 },
-  volt:  { name: 'Electric Blue',  price: 100, color: 0x9adcff, hook: 0x4aa8ff },
-  royal: { name: 'Royal Purple',   price: 100, color: 0xd6b7ff, hook: 0xb17aff },
-  gold:  { name: 'Golden Rope',    price: 300, color: 0xffe9a0, hook: 0xffd76a },
+  eco:     { name: 'Eco Rope',       price: 0,   color: 0xd8ffe2, hook: 0x7dffa0 },
+  volt:    { name: 'Electric Blue',  price: 100, color: 0x9adcff, hook: 0x4aa8ff },
+  royal:   { name: 'Royal Purple',   price: 100, color: 0xd6b7ff, hook: 0xb17aff },
+  ember:   { name: 'Ember Rope',     price: 250, color: 0xffb08a, hook: 0xff5f57 },
+  frost:   { name: 'Frost Rope',     price: 250, color: 0xe0f7ff, hook: 0x9adcff },
+  gold:    { name: 'Golden Rope',    price: 300, color: 0xffe9a0, hook: 0xffd76a },
+  rainbow: { name: 'Rainbow Rope 🌈', price: 500, color: 0xff5f8f, hook: 0xffffff, animated: true },
 };
 const TAGS = {
-  classic: { name: 'Classic Tag',  price: 0 },
-  rainbow: { name: 'Rainbow Wave', price: 200 },
-  sparkle: { name: 'Sparkle',      price: 200 },
-  fire:    { name: 'Fire Glow',    price: 300 },
+  classic: { name: 'Classic Tag',   price: 0 },
+  rainbow: { name: 'Rainbow Wave',  price: 200 },
+  sparkle: { name: 'Sparkle',       price: 200 },
+  ocean:   { name: 'Ocean Wave',    price: 250 },
+  fire:    { name: 'Fire Glow',     price: 300 },
+  gold:    { name: 'Golden Shine',  price: 350 },
+  galaxy:  { name: 'Galaxy 🌟',      price: 450 },
 };
 function readWallet() {
   const base = { coins: 0, owned: ['outfit:classic', 'rope:eco', 'tag:classic'],
@@ -615,6 +625,16 @@ class Game {
         if (Math.random() < dt * 2.2)
           this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35), '✨', 1,
             { size: 0.25, up: 1, life: 0.7, gravity: 0, speed: 1 });
+      } else if (style === 'ocean') {
+        this.nameTag.material.color.setHSL(0.52 + 0.07 * Math.sin(t * 0.003), 0.85, 0.7);
+      } else if (style === 'gold') {
+        const k = 0.5 + 0.5 * Math.sin(t * 0.005);
+        this.nameTag.material.color.setRGB(1, 0.8 + 0.1 * k, 0.25 + 0.35 * k);
+      } else if (style === 'galaxy') {
+        this.nameTag.material.color.setHSL(0.68 + 0.12 * Math.sin(t * 0.002), 0.85, 0.72);
+        if (Math.random() < dt * 1.6)
+          this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35), '🌟', 1,
+            { size: 0.28, up: 1, life: 0.8, gravity: 0, speed: 1.2 });
       } else {
         this.nameTag.material.color.set(0xffffff);
       }

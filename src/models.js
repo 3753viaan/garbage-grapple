@@ -53,7 +53,9 @@ export function makeTextPlane(text, { w = 4, h = 1, fg = '#ffffff', bg = '#1f6b3
 // outfit = { cap, shirt, pants } color overrides (shop cosmetics)
 export function makeRanger(outfit = {}) {
   const g = new THREE.Group();
-  const skin = mat(0xdba876), shirt = mat(outfit.shirt ?? 0x2e8b57, { roughness: 0.7 }),
+  const shirtOpts = { roughness: 0.7 };
+  if (outfit.emissive) { shirtOpts.emissive = outfit.emissive; shirtOpts.emissiveIntensity = 0.5; }
+  const skin = mat(0xdba876), shirt = mat(outfit.shirt ?? 0x2e8b57, shirtOpts),
         pants = mat(outfit.pants ?? 0x35506e), shoe = mat(0xf4f4f4, { roughness: 0.5 }),
         capM = mat(outfit.cap ?? 0x1f8a3d, { roughness: 0.6 });
 

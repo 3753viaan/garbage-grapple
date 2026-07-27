@@ -58,6 +58,7 @@ export class Player {
     this.hook = new THREE.Mesh(
       new THREE.SphereGeometry(0.11, 8, 8),
       new THREE.MeshBasicMaterial({ color: (cosmetics.rope && cosmetics.rope.hook) || 0x7dffa0 }));
+    this.ropeAnimated = !!(cosmetics.rope && cosmetics.rope.animated);
     this.hook.visible = false;
     scene.add(this.hook);
 
@@ -291,6 +292,11 @@ export class Player {
     else if (this.grapple && this.grapple.mode === 'pull' && this.grapple.targetGroup)
       ropeTo = this.grapple.targetGroup.getWorldPosition(new THREE.Vector3());
     if (ropeTo) {
+      if (this.ropeAnimated) {
+        const hue = (performance.now() * 0.0006) % 1;
+        this.rope.material.color.setHSL(hue, 0.9, 0.7);
+        this.hook.material.color.setHSL((hue + 0.3) % 1, 0.9, 0.75);
+      }
       const from = this.handPos();
       const mid = from.clone().add(ropeTo).multiplyScalar(0.5);
       const len = from.distanceTo(ropeTo);
