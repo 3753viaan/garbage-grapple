@@ -56,7 +56,15 @@ export class UI {
     this.el.frozenTag.style.display = g.power.freeze > 0 ? 'block' : 'none';
     this.el.levelTag.textContent = `LEVEL ${g.cfg.id} — ${g.cfg.name.split('—')[0].trim().toUpperCase()}`;
     this.el.score.textContent = g.score.toLocaleString();
-    this.el.coinsHud.textContent = `🪙 ${g.coins || 0}`;
+    // rolling coin counter — ticks up toward the real balance
+    const target = g.coins || 0;
+    if (this._coinsShown === undefined) this._coinsShown = target;
+    if (this._coinsShown !== target) {
+      const d = target - this._coinsShown;
+      this._coinsShown += Math.sign(d) * Math.max(1, Math.ceil(Math.abs(d) * 0.18));
+      if (Math.sign(target - this._coinsShown) !== Math.sign(d)) this._coinsShown = target;
+    }
+    this.el.coinsHud.textContent = `🪙 ${this._coinsShown}`;
 
     if (g.combo >= 2) {
       this.el.combo.textContent = `🔥 Combo ×${g.multiplier} (${g.combo})`;
@@ -96,6 +104,22 @@ export class UI {
     if (g.power.freeze > 0) chips.push(`❄️ Freeze ${g.power.freeze.toFixed(0)}s`);
     if (g.power.double > 0) chips.push(`⭐ ×2 Score ${g.power.double.toFixed(0)}s`);
     this.el.powerupRow.innerHTML = chips.map(c => `<div class="puChip">${c}</div>`).join('');
+  }
+
+  coinGain(amount) {
+    // pop the counter and float a "+N" up from it
+    const el = this.el.coinsHud;
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+    const fly = document.createElement('div');
+    fly.className = 'coinFly';
+    fly.textContent = `+${amount} 🪙`;
+    const r = el.getBoundingClientRect();
+    fly.style.left = `${r.left - 14}px`;
+    fly.style.top = `${r.top + 4}px`;
+    document.body.appendChild(fly);
+    setTimeout(() => fly.remove(), 1300);
   }
 
   comboPop() {

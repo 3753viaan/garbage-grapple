@@ -298,6 +298,9 @@ class Game {
     wallet.coins += 5 * n;
     writeWallet();
     this.coins = wallet.coins;
+    ui.coinGain(5 * n);
+    this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 1.4), '🪙',
+      Math.min(10, 3 + n), { size: 0.4, up: 3.5, speed: 2.5, life: 1.1 });
     ui.announce(`♻ +${n} RECYCLED! +${5 * n} 🪙`);
     // boss core exposure
     const boss = this.world.boss;
@@ -319,6 +322,9 @@ class Game {
     wallet.coins += 30;
     writeWallet();
     this.coins = wallet.coins;
+    ui.coinGain(30);
+    this.world.particles.burst(animal.group.position.clone().setY(1.2), '🪙', 6,
+      { size: 0.4, up: 3.5, speed: 2.5, life: 1.1 });
     ui.announce(`💚 ${animal.name} RESCUED! +30 🪙`);
   }
 
@@ -332,6 +338,9 @@ class Game {
     wallet.coins += 300;
     writeWallet();
     this.coins = wallet.coins;
+    ui.coinGain(300);
+    this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 1.4), '🪙', 12,
+      { size: 0.45, up: 4.5, speed: 3.5, life: 1.4 });
     ui.announce('🏆 GOLDEN BOTTLE! +1000 · +300 🪙');
     recordBottle(this.playerName || 'Eco Ranger');
   }
@@ -843,22 +852,32 @@ const SHOP_CATS = { outfit: OUTFITS, rope: ROPES, tag: TAGS };
 function renderShop() {
   $('shopCoins').textContent = wallet.coins;
   const hex = c => '#' + c.toString(16).padStart(6, '0');
+  const prevName = escHtml(($('playerName').value.trim() || 'YOU').slice(0, 10));
   const section = (title, cat, items) => `<h3>${title}</h3>` + Object.entries(items).map(([id, it]) => {
     const key = `${cat}:${id}`;
     const owned = wallet.owned.includes(key);
     const equipped = wallet.eq[cat] === id;
     const afford = wallet.coins >= it.price;
-    const sw = cat === 'outfit'
-      ? `<span class="swatch" style="background:${hex(it.shirt)}"></span><span class="swatch" style="background:${hex(it.cap)}"></span>`
-      : cat === 'rope'
-        ? `<span class="swatch" style="background:${hex(it.color)}"></span>`
-        : `<span class="swatch" style="background:linear-gradient(45deg,#ff5f57,#ffd76a,#34c759,#4aa8ff)"></span>`;
+    let sw;
+    if (cat === 'outfit') {
+      // mini outfit disc: cap / shirt / pants bands, shine sweep, glow for emissive gear
+      sw = `<span class="swOutfit${it.emissive ? ' glow' : ''}"
+        style="--gc:${hex(it.emissive || it.shirt)}; background:linear-gradient(160deg,
+        ${hex(it.cap)} 0 38%, ${hex(it.shirt)} 38% 74%, ${hex(it.pants)} 74% 100%)"></span>`;
+    } else if (cat === 'rope') {
+      sw = it.animated
+        ? `<span class="swRope rainbowAnim"></span>`
+        : `<span class="swRope" style="background:linear-gradient(90deg, ${hex(it.color)}, ${hex(it.hook)})"></span>`;
+    } else {
+      // live animated preview of the name tag style
+      sw = `<span class="tagPrev ${id}">${prevName}</span>`;
+    }
     const btn = equipped
       ? `<button class="btn small" disabled style="opacity:.75">Equipped ✓</button>`
       : owned
         ? `<button class="btn ghost small" data-act="equip" data-cat="${cat}" data-id="${id}">Equip</button>`
         : `<button class="btn ghost small" ${afford ? '' : 'disabled style="opacity:.35"'} data-act="buy" data-cat="${cat}" data-id="${id}">Buy · 🪙 ${it.price}</button>`;
-    return `<div class="shopRow"><span>${sw} ${it.name}</span>${btn}</div>`;
+    return `<div class="shopRow${equipped ? ' eq' : ''}"><span>${sw} ${it.name}</span>${btn}</div>`;
   }).join('');
   $('shopBody').innerHTML =
     section('👕 Avatar Outfits', 'outfit', OUTFITS) +
@@ -886,6 +905,10 @@ $('shopBody').addEventListener('click', e => {
   writeWallet();
   game.coins = wallet.coins;
   renderShop();
+  const sc = $('shopCoins');
+  sc.classList.remove('pop');
+  void sc.offsetWidth;
+  sc.classList.add('pop');
 });
 $('shopBtn').addEventListener('click', () => { renderShop(); ui.overlay('shop', true); });
 $('shopBack').addEventListener('click', () => ui.overlay('shop', false));
