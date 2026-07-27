@@ -523,30 +523,37 @@ class Game {
 
 const game = new Game();
 
-// ---------------- guide arrow (points to nearest litter / station / boss) ----------------
-const guideArrow = (() => {
+// ---------------- guide trail: a line of ground arrows to the nearest litter ----------------
+const TRAIL_N = 26;
+const TRAIL_SPACING = 2.4;
+const guideTrail = (() => {
   const g = new THREE.Group();
-  const m = new THREE.MeshBasicMaterial({ color: 0xffd76a });
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 10), m);
-  head.rotation.x = Math.PI / 2;
-  head.position.z = 0.45;
-  g.add(head);
-  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 8), m);
-  tail.rotation.x = Math.PI / 2;
-  tail.position.z = 0.05;
-  g.add(tail);
-  g.visible = false;
-  g.userData.mat = m;
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.8, depthWrite: false });
+  // flat chevron, tip toward -z after rotateX
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0.52);
+  shape.lineTo(0.44, -0.3);
+  shape.lineTo(0, 0.04);
+  shape.lineTo(-0.44, -0.3);
+  shape.closePath();
+  const geo = new THREE.ShapeGeometry(shape);
+  geo.rotateX(-Math.PI / 2);
+  for (let i = 0; i < TRAIL_N; i++) {
+    const m = new THREE.Mesh(geo, mat);
+    m.visible = false;
+    g.add(m);
+  }
+  g.userData.mat = mat;
   scene.add(g);
   return g;
 })();
 
 Game.prototype.updateGuide = function () {
-  const g = guideArrow;
-  if (this.state !== 'play') { g.visible = false; return; }
+  const g = guideTrail;
+  if (this.state !== 'play') { for (const m of g.children) m.visible = false; return; }
   let target = null, color = 0xffd76a;
   if (!this.bagFree()) {
-    target = this.world.stationPos;              // bag full → head to the station
+    target = this.world.stationPos;              // bag full → lead to the station
     color = 0x34c759;
   } else {
     let bd = Infinity;
@@ -561,12 +568,26 @@ Game.prototype.updateGuide = function () {
       else if (this.world.golden && !this.world.golden.taken) { target = this.world.golden.group.position; color = 0xfff3ae; }
     }
   }
-  if (!target) { g.visible = false; return; }
-  g.visible = true;
-  g.userData.mat.color.setHex(color);
+  if (!target) { for (const m of g.children) m.visible = false; return; }
+  const mat = g.userData.mat;
+  mat.color.setHex(color);
+  mat.opacity = 0.55 + Math.sin(performance.now() * 0.005) * 0.2;
   const p = this.player.pos;
-  g.position.set(p.x, p.y + 2.8 + Math.sin(performance.now() * 0.004) * 0.12, p.z);
-  g.rotation.y = Math.atan2(target.x - p.x, target.z - p.z);
+  const dx = target.x - p.x, dz = target.z - p.z;
+  const dist = Math.hypot(dx, dz);
+  const ux = dx / (dist || 1), uz = dz / (dist || 1);
+  const ang = Math.atan2(-ux, -uz);              // chevron tip faces the target
+  const flow = (performance.now() * 0.0035 % 1) * TRAIL_SPACING;   // arrows flow toward it
+  let i = 0;
+  for (let d = 1.8 + flow; d < dist - 1 && i < TRAIL_N; d += TRAIL_SPACING, i++) {
+    const m = g.children[i];
+    const x = p.x + ux * d, z = p.z + uz * d;
+    const h = this.world.groundHeightAt(x, z, 100);
+    m.position.set(x, (this.world.isWater(x, z) ? 0.2 : h + 0.07), z);
+    m.rotation.y = ang;
+    m.visible = true;
+  }
+  for (; i < TRAIL_N; i++) g.children[i].visible = false;
 };
 
 // ---------------- menu wiring ----------------
