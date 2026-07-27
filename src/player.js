@@ -332,11 +332,13 @@ export class Player {
       return;
     }
     if (zipMode === 'ground') {
-      // dash pose: arms swept out to the sides
-      R.lArm.rotation.x = -0.35;
-      R.rArm.rotation.x = -0.35;
-      R.lArm.rotation.z = -1.2;
-      R.rArm.rotation.z = 1.2;
+      // dash pose: grapple hand (right, with the gauntlet) points forward along
+      // the rope; the free hand flails out to the side a little
+      const flail = Math.sin(performance.now() * 0.012) * 0.18;
+      R.rArm.rotation.x = -1.6;
+      R.rArm.rotation.z = 0.15;
+      R.lArm.rotation.x = 0.35 + flail;
+      R.lArm.rotation.z = -0.65 - flail * 0.5;
       R.lLeg.rotation.x = 0.4;
       R.rLeg.rotation.x = -0.2;
       R.torso.rotation.x = 0.35;
@@ -345,11 +347,15 @@ export class Player {
     R.lArm.rotation.z = R.rArm.rotation.z = 0;
     R.torso.rotation.x = 0;
     if (!this.onGround) {
-      // jump pose
+      // airborne: arms up for the jump, but the legs KEEP the running cycle
+      // going (blends back to a tuck when there's no horizontal speed)
+      this.runPhase += dt * (4 + hSpeed * 1.35);
+      const k = Math.min(1, hSpeed / RUN_SPEED);
+      const s = Math.sin(this.runPhase);
+      R.lLeg.rotation.x = s * 0.95 * k + 0.5 * (1 - k);
+      R.rLeg.rotation.x = -s * 0.95 * k - 0.35 * (1 - k);
       R.lArm.rotation.x = -0.8;
       R.rArm.rotation.x = -0.8;
-      R.lLeg.rotation.x = 0.55;
-      R.rLeg.rotation.x = -0.4;
       return;
     }
     if (hSpeed > 0.4) {
