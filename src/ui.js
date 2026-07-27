@@ -6,7 +6,8 @@ export class UI {
   constructor() {
     this.el = {
       start: $('startScreen'), howto: $('howto'), about: $('about'),
-      leaderboard: $('leaderboard'), intro: $('levelIntro'),
+      leaderboard: $('leaderboard'), shop: $('shop'), intro: $('levelIntro'),
+      coinsHud: $('coinsHud'),
       hud: $('hud'), pause: $('pauseScreen'), results: $('resultsScreen'),
       gameover: $('gameoverScreen'), victory: $('victoryScreen'),
       objectives: $('objectives'), timer: $('timer'), levelTag: $('levelTag'),
@@ -55,6 +56,7 @@ export class UI {
     this.el.frozenTag.style.display = g.power.freeze > 0 ? 'block' : 'none';
     this.el.levelTag.textContent = `LEVEL ${g.cfg.id} — ${g.cfg.name.split('—')[0].trim().toUpperCase()}`;
     this.el.score.textContent = g.score.toLocaleString();
+    this.el.coinsHud.textContent = `🪙 ${g.coins || 0}`;
 
     if (g.combo >= 2) {
       this.el.combo.textContent = `🔥 Combo ×${g.multiplier} (${g.combo})`;

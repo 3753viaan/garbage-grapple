@@ -50,11 +50,12 @@ export function makeTextPlane(text, { w = 4, h = 1, fg = '#ffffff', bg = '#1f6b3
 }
 
 // ---------- PLAYER : Eco Ranger ----------
-export function makeRanger() {
+// outfit = { cap, shirt, pants } color overrides (shop cosmetics)
+export function makeRanger(outfit = {}) {
   const g = new THREE.Group();
-  const skin = mat(0xdba876), shirt = mat(0x2e8b57, { roughness: 0.7 }),
-        pants = mat(0x35506e), shoe = mat(0xf4f4f4, { roughness: 0.5 }),
-        capM = mat(0x1f8a3d, { roughness: 0.6 });
+  const skin = mat(0xdba876), shirt = mat(outfit.shirt ?? 0x2e8b57, { roughness: 0.7 }),
+        pants = mat(outfit.pants ?? 0x35506e), shoe = mat(0xf4f4f4, { roughness: 0.5 }),
+        capM = mat(outfit.cap ?? 0x1f8a3d, { roughness: 0.6 });
 
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.42, 6, 12), shirt);
   torso.position.y = 1.05; g.add(torso);

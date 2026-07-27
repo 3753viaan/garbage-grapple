@@ -18,13 +18,13 @@ const JBUFFER = 0.13;
 const RADIUS = 0.45;
 
 export class Player {
-  constructor(scene, camera, world, audio) {
+  constructor(scene, camera, world, audio, cosmetics = {}) {
     this.scene = scene;
     this.camera = camera;
     this.world = world;
     this.audio = audio;
 
-    const { group, refs } = makeRanger();
+    const { group, refs } = makeRanger(cosmetics.outfit);
     this.model = group;
     this.refs = refs;
     scene.add(group);
@@ -52,12 +52,12 @@ export class Player {
 
     this.rope = new THREE.Mesh(
       new THREE.CylinderGeometry(0.03, 0.03, 1, 6),
-      new THREE.MeshBasicMaterial({ color: 0xd8ffe2 }));
+      new THREE.MeshBasicMaterial({ color: (cosmetics.rope && cosmetics.rope.color) || 0xd8ffe2 }));
     this.rope.visible = false;
     scene.add(this.rope);
     this.hook = new THREE.Mesh(
       new THREE.SphereGeometry(0.11, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0x7dffa0 }));
+      new THREE.MeshBasicMaterial({ color: (cosmetics.rope && cosmetics.rope.hook) || 0x7dffa0 }));
     this.hook.visible = false;
     scene.add(this.hook);
 

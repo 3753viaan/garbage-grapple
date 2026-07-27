@@ -64,7 +64,13 @@
     padding: 5px 12px; border-radius: 20px; }
 
   /* ============ HOW TO PLAY / ABOUT / LEADERBOARD ============ */
-  #howto, #about, #leaderboard { z-index: 70; background: rgba(4, 18, 10, .72); backdrop-filter: blur(6px); }
+  #howto, #about, #leaderboard, #shop { z-index: 70; background: rgba(4, 18, 10, .72); backdrop-filter: blur(6px); }
+  .shopRow { display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 10px; border-bottom: 1px dashed rgba(125,255,160,.22); font-size: 15px; }
+  .shopRow > span { display: flex; align-items: center; gap: 8px; }
+  .swatch { display: inline-block; width: 15px; height: 15px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,.5); }
+  #coinsHud { font-size: 16px; font-weight: 900; color: var(--sun); margin-top: 2px; }
   .lbRow { display: flex; justify-content: space-between; align-items: center;
     padding: 8px 12px; border-bottom: 1px dashed rgba(125,255,160,.22); font-size: 17px; }
   .lbRow b { color: var(--sun); font-variant-numeric: tabular-nums; }
@@ -238,6 +244,7 @@
     <button class="btn ghost small" id="howtoBtn">How to Play</button>
     <button class="btn ghost small" id="aboutBtn">About Game</button>
     <button class="btn ghost small" id="lbBtn">🏆 Leaderboard</button>
+    <button class="btn ghost small" id="shopBtn">🛍 Shop</button>
   </div>
   <div id="sdgRow">
     <span>🌍 Supporting the UN Sustainable Development Goals</span>
@@ -314,6 +321,17 @@
   </div>
 </div>
 
+<!-- SHOP -->
+<div id="shop" class="overlay hidden">
+  <div class="card" style="max-width: 560px;">
+    <h2>🛍 Eco Shop &nbsp;<span style="font-size:20px; color:var(--sun);">🪙 <span id="shopCoins">0</span></span></h2>
+    <div class="goalList" style="font-size:13px; opacity:.85;">Earn coins by playing:
+      <b>+5 🪙</b> for every bag you recycle · <b>+30 🪙</b> for every animal you rescue.</div>
+    <div id="shopBody"></div>
+    <div class="cardBtns"><button class="btn small" id="shopBack">Back</button></div>
+  </div>
+</div>
+
 <!-- LEADERBOARD -->
 <div id="leaderboard" class="overlay hidden">
   <div class="card" style="max-width: 540px;">
@@ -346,6 +364,7 @@
   </div>
   <div id="scoreWrap" class="hudPanel">
     <div id="score">0</div>
+    <div id="coinsHud">🪙 0</div>
     <div id="combo"></div>
     <div id="comboBarWrap"><div id="comboBar"></div></div>
   </div>

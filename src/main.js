@@ -93,6 +93,40 @@ const audio = new AudioEngine();
 // closing the app starts fresh (deliberately NOT persisted to storage).
 let progressState = null;   // { idx, totalScore, totals, badges, name }
 
+// ---------------- coins & cosmetics shop (persists on this computer) ----------------
+const OUTFITS = {
+  classic: { name: 'Classic Ranger', price: 0,   cap: 0x1f8a3d, shirt: 0x2e8b57, pants: 0x35506e },
+  ocean:   { name: 'Ocean Blue',     price: 150, cap: 0x1e4a8a, shirt: 0x2f7fd6, pants: 0x1c2f4a },
+  sunset:  { name: 'Sunset Orange',  price: 150, cap: 0xb3402f, shirt: 0xff9f43, pants: 0x6b3a2b },
+  shadow:  { name: 'Midnight Shadow', price: 250, cap: 0x14161a, shirt: 0x2c2f33, pants: 0x101214 },
+  golden:  { name: 'Golden Hero',    price: 400, cap: 0xd9a824, shirt: 0xffd76a, pants: 0x8a6a1a },
+};
+const ROPES = {
+  eco:   { name: 'Eco Rope',       price: 0,   color: 0xd8ffe2, hook: 0x7dffa0 },
+  volt:  { name: 'Electric Blue',  price: 100, color: 0x9adcff, hook: 0x4aa8ff },
+  royal: { name: 'Royal Purple',   price: 100, color: 0xd6b7ff, hook: 0xb17aff },
+  gold:  { name: 'Golden Rope',    price: 300, color: 0xffe9a0, hook: 0xffd76a },
+};
+const TAGS = {
+  classic: { name: 'Classic Tag',  price: 0 },
+  rainbow: { name: 'Rainbow Wave', price: 200 },
+  sparkle: { name: 'Sparkle',      price: 200 },
+  fire:    { name: 'Fire Glow',    price: 300 },
+};
+function readWallet() {
+  const base = { coins: 0, owned: ['outfit:classic', 'rope:eco', 'tag:classic'],
+    eq: { outfit: 'classic', rope: 'eco', tag: 'classic' } };
+  try {
+    const w = JSON.parse(localStorage.getItem('gg-wallet'));
+    if (!w) return base;
+    return { coins: w.coins || 0, owned: w.owned || base.owned, eq: { ...base.eq, ...(w.eq || {}) } };
+  } catch (e) { return base; }
+}
+let wallet = readWallet();
+function writeWallet() {
+  try { localStorage.setItem('gg-wallet', JSON.stringify(wallet)); } catch (e) {}
+}
+
 class Game {
   constructor() {
     this.state = 'menu';
@@ -128,8 +162,13 @@ class Game {
     if (this.world) this.world.dispose();
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
     this.world = new World(scene, this.cfg, audio);
-    this.player = new Player(scene, camera, this.world, audio);
-    this.player.model.add(makeNameTag(this.playerName || 'Eco Ranger'));
+    this.player = new Player(scene, camera, this.world, audio, {
+      outfit: OUTFITS[wallet.eq.outfit] || OUTFITS.classic,
+      rope: ROPES[wallet.eq.rope] || ROPES.eco,
+    });
+    this.nameTag = makeNameTag(this.playerName || 'Eco Ranger');
+    this.player.model.add(this.nameTag);
+    this.coins = wallet.coins;
 
     this.score = this.scoreAtLevelStart = this.totalScore;
     this.timeLeft = this.cfg.time;
@@ -245,7 +284,10 @@ class Game {
     this.bag = [];
     this.player.setBagFill(0);
     this.flags.recycledOnce = true;
-    ui.announce(`♻ +${n} RECYCLED!`);
+    wallet.coins += 5;
+    writeWallet();
+    this.coins = wallet.coins;
+    ui.announce(`♻ +${n} RECYCLED! +5 🪙`);
     // boss core exposure
     const boss = this.world.boss;
     if (boss && boss.state === 'active' && this.recycledSinceCore >= this.coreNeed) {
@@ -263,7 +305,10 @@ class Game {
     this.levelStats.wildlifePts += pts;
     audio.rescue();
     this.flags.rescuedOnce = true;
-    ui.announce(`💚 ${animal.name} RESCUED!`);
+    wallet.coins += 30;
+    writeWallet();
+    this.coins = wallet.coins;
+    ui.announce(`💚 ${animal.name} RESCUED! +30 🪙`);
   }
 
   collectGolden() {
@@ -549,6 +594,26 @@ class Game {
       else if (nearStation && this.bag.length > 0) this.deposit();
     }
 
+    // equipped name-tag style animation
+    if (this.nameTag) {
+      const style = wallet.eq.tag, t = performance.now();
+      if (style === 'rainbow') {
+        this.nameTag.material.color.setHSL((t * 0.0004) % 1, 0.9, 0.75);
+      } else if (style === 'fire') {
+        const k = 0.5 + 0.5 * Math.sin(t * 0.006);
+        this.nameTag.material.color.setRGB(1, 0.5 + 0.4 * k, 0.2);
+      } else if (style === 'sparkle') {
+        this.nameTag.material.color.set(0xffffff);
+        const s = 1 + Math.sin(t * 0.008) * 0.09;
+        this.nameTag.scale.set(2.2 * s, 0.55 * s, 1);
+        if (Math.random() < dt * 2.2)
+          this.world.particles.burst(this.player.pos.clone().setY(this.player.pos.y + 2.35), '✨', 1,
+            { size: 0.25, up: 1, life: 0.7, gravity: 0, speed: 1 });
+      } else {
+        this.nameTag.material.color.set(0xffffff);
+      }
+    }
+
     this.updateTutorial();
     this.updateGuide(dt);
     ui.updateHUD(this);
@@ -738,6 +803,58 @@ function renderLB(tab) {
   }
   $('lbList').innerHTML = html;
 }
+// ---------------- shop UI ----------------
+const SHOP_CATS = { outfit: OUTFITS, rope: ROPES, tag: TAGS };
+function renderShop() {
+  $('shopCoins').textContent = wallet.coins;
+  const hex = c => '#' + c.toString(16).padStart(6, '0');
+  const section = (title, cat, items) => `<h3>${title}</h3>` + Object.entries(items).map(([id, it]) => {
+    const key = `${cat}:${id}`;
+    const owned = wallet.owned.includes(key);
+    const equipped = wallet.eq[cat] === id;
+    const afford = wallet.coins >= it.price;
+    const sw = cat === 'outfit'
+      ? `<span class="swatch" style="background:${hex(it.shirt)}"></span><span class="swatch" style="background:${hex(it.cap)}"></span>`
+      : cat === 'rope'
+        ? `<span class="swatch" style="background:${hex(it.color)}"></span>`
+        : `<span class="swatch" style="background:linear-gradient(45deg,#ff5f57,#ffd76a,#34c759,#4aa8ff)"></span>`;
+    const btn = equipped
+      ? `<button class="btn small" disabled style="opacity:.75">Equipped ✓</button>`
+      : owned
+        ? `<button class="btn ghost small" data-act="equip" data-cat="${cat}" data-id="${id}">Equip</button>`
+        : `<button class="btn ghost small" ${afford ? '' : 'disabled style="opacity:.35"'} data-act="buy" data-cat="${cat}" data-id="${id}">Buy · 🪙 ${it.price}</button>`;
+    return `<div class="shopRow"><span>${sw} ${it.name}</span>${btn}</div>`;
+  }).join('');
+  $('shopBody').innerHTML =
+    section('👕 Avatar Outfits', 'outfit', OUTFITS) +
+    section('🪢 Grapple Skins', 'rope', ROPES) +
+    section('✨ Name Tag Styles', 'tag', TAGS);
+}
+$('shopBody').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const { act, cat, id } = b.dataset;
+  const items = SHOP_CATS[cat];
+  const key = `${cat}:${id}`;
+  audio.ensure();
+  if (act === 'buy' && !wallet.owned.includes(key) && wallet.coins >= items[id].price) {
+    wallet.coins -= items[id].price;
+    wallet.owned.push(key);
+    wallet.eq[cat] = id;
+    audio.powerup();
+  } else if (act === 'equip') {
+    wallet.eq[cat] = id;
+    audio.collect(0);
+  } else {
+    return;
+  }
+  writeWallet();
+  game.coins = wallet.coins;
+  renderShop();
+});
+$('shopBtn').addEventListener('click', () => { renderShop(); ui.overlay('shop', true); });
+$('shopBack').addEventListener('click', () => ui.overlay('shop', false));
+
 $('lbBtn').addEventListener('click', () => { renderLB('time'); ui.overlay('leaderboard', true); });
 $('lbTabTime').addEventListener('click', () => renderLB('time'));
 $('lbTabBottles').addEventListener('click', () => renderLB('bottles'));
