@@ -285,10 +285,10 @@ class Game {
     this.bag = [];
     this.player.setBagFill(0);
     this.flags.recycledOnce = true;
-    wallet.coins += 5;
+    wallet.coins += 5 * n;
     writeWallet();
     this.coins = wallet.coins;
-    ui.announce(`♻ +${n} RECYCLED! +5 🪙`);
+    ui.announce(`♻ +${n} RECYCLED! +${5 * n} 🪙`);
     // boss core exposure
     const boss = this.world.boss;
     if (boss && boss.state === 'active' && this.recycledSinceCore >= this.coreNeed) {
@@ -319,7 +319,10 @@ class Game {
     this.score += 1000;
     this.levelStats.goldenPts = 1000;
     audio.golden();
-    ui.announce('🏆 GOLDEN BOTTLE! +1000');
+    wallet.coins += 300;
+    writeWallet();
+    this.coins = wallet.coins;
+    ui.announce('🏆 GOLDEN BOTTLE! +1000 · +300 🪙');
     recordBottle(this.playerName || 'Eco Ranger');
   }
 
