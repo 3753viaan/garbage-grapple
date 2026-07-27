@@ -499,11 +499,13 @@ class Game {
 
     const p = this.player.pos;
 
-    // walk-over collection
+    // walk-over collection (litter up to tree height counts — standing at the
+    // trunk grabs litter stuck in the canopy above)
     for (const item of this.world.trash) {
       if (item.collected || item.pulling) continue;
       const gp = item.group.position;
-      if (Math.abs(gp.y - p.y) < 2 && Math.hypot(gp.x - p.x, gp.z - p.z) < 1.35) {
+      const dy = gp.y - p.y;
+      if (dy > -2 && dy < 3.8 && Math.hypot(gp.x - p.x, gp.z - p.z) < 1.5) {
         if (this.bagFree()) this.collectTrash(item);
         else this.bagFullNotice();
       }

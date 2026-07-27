@@ -467,10 +467,13 @@ export class World {
       const item = { group: g, type, collected: false, pulling: false, pullT: 0, bob: rand(0, TAU), baseY: pos.y };
       g.userData.item = item;
       this.trash.push(item);
-      // elevated litter (treetops/rooftops) is bigger with a stronger halo
+      // elevated litter is bigger; tree litter keeps a subtle halo (it already
+      // sticks out of the canopy), rooftop/water litter gets the stronger one
       if (elevated && pos.y > 1.4) {
         g.scale.setScalar(1.3);
-        if (g.userData.halo) g.userData.halo.scale.setScalar(1.5);
+        const inTree = !this.roofs && cfg.env !== 'beach' && cfg.env !== 'river';
+        if (inTree) item.dimHalo = true;
+        else if (g.userData.halo) g.userData.halo.scale.setScalar(1.5);
       }
     }
 
@@ -891,7 +894,9 @@ export class World {
       g.position.y = item.baseY + Math.sin(T * 2 + item.bob) * 0.07 + 0.05;
       g.rotation.y += dt * 0.8;
       if (g.userData.halo) {
-        g.userData.halo.material.opacity = 0.4 + Math.sin(T * 3 + item.bob) * 0.2;
+        g.userData.halo.material.opacity = item.dimHalo
+          ? 0.16 + Math.sin(T * 3 + item.bob) * 0.07
+          : 0.4 + Math.sin(T * 3 + item.bob) * 0.2;
         g.userData.halo.rotation.z += dt;
       }
       if (game.power.magnet > 0 && game.bagFree() && g.position.distanceTo(playerPos) < 13) item.pulling = true;
