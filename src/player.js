@@ -8,8 +8,8 @@ import { makeRanger } from './models.js';
 const GRAVITY = 25;
 const RUN_SPEED = 8;
 const SPRINT_MULT = 1.5;
-const ACCEL = 42;
-const FRICTION = 26;
+const ACCEL = 52;
+const FRICTION = 32;
 const AIR_ACCEL = 18;
 const JUMP_V = 10.6;
 const DJUMP_V = 9.4;
@@ -107,13 +107,11 @@ export class Player {
     if (!hit) { this.audio.grappleShoot(); return; }
     this.audio.grappleShoot();
     const kind = hit.kind;
-    if (kind === 'ring') {
-      const anchor = new THREE.Vector3();
-      hit.root.getWorldPosition(anchor);
-      const len = Math.max(3.5, Math.min(30, this.chestPos().distanceTo(anchor) * 0.96));
-      this.grapple = { mode: 'swing', anchor, ropeLen: len };
+    if (kind === 'wall') {
+      // latch onto a building wall and zip up to it
+      this.grapple = { mode: 'zip', anchor: hit.point.clone(), t: 0 };
       this.audio.grappleHit();
-      game.onSwingStart();
+      game.onLatch();
     } else if (kind === 'trash') {
       if (!game.bagFree()) { game.bagFullNotice(); return; }
       const item = hit.root.userData.item;
@@ -136,11 +134,6 @@ export class Player {
   }
 
   releaseGrapple() {
-    if (this.grapple && this.grapple.mode === 'swing') {
-      this.audio.release();
-      // small upward pop for satisfying swing exits
-      if (this.vel.y > 0) this.vel.y += 1.5;
-    }
     this.grapple = null;
   }
 
@@ -157,9 +150,8 @@ export class Player {
     // aim every frame (crosshair feedback)
     this.aim(game);
 
-    // fire / release grapple
+    // fire grapple
     if (input.grapplePressed) this.fireGrapple(game);
-    if (this.grapple && this.grapple.mode === 'swing' && !input.grappleDown) this.releaseGrapple();
     if (this.grapple && this.grapple.mode === 'pull') {
       this.grapple.visTimer -= dt;
       if (this.grapple.visTimer <= 0) this.grapple = null;
@@ -182,27 +174,26 @@ export class Player {
     const onSlick = this.onGround && world.isSlick(this.pos.x, this.pos.z);
     let maxSpeed = RUN_SPEED * (sprint ? SPRINT_MULT : 1) * speedBoost * (inWater ? 0.42 : 1);
 
-    const swinging = this.grapple && this.grapple.mode === 'swing';
+    const zipping = this.grapple && this.grapple.mode === 'zip';
 
-    if (swinging) {
-      // pendulum: gravity + air pump toward camera forward
-      this.vel.y -= GRAVITY * dt;
-      if (hasInput) this.vel.addScaledVector(mv, 10 * dt);
-      this.pos.addScaledVector(this.vel, dt);
+    if (zipping) {
+      // zip straight to the latched point on the wall
+      this.grapple.t += dt;
       const chest = this.chestPos();
-      const d = chest.sub(this.grapple.anchor);
-      const dist = d.length();
-      if (dist > this.grapple.ropeLen) {
-        d.normalize();
-        // clamp position to rope length
-        const corrected = this.grapple.anchor.clone().addScaledVector(d, this.grapple.ropeLen);
-        this.pos.copy(corrected.sub(new THREE.Vector3(0, 1.3, 0)));
-        // remove outward radial velocity
-        const radial = d.dot(this.vel);
-        if (radial > 0) this.vel.addScaledVector(d, -radial);
+      const dir = this.grapple.anchor.clone().sub(chest);
+      const dist = dir.length();
+      if (dist < 1.6 || this.grapple.t > 2.5) {
+        // arrived: pop upward so you can mantle onto the roof — or latch again to climb higher
+        dir.normalize();
+        this.vel.copy(dir.multiplyScalar(4));
+        this.vel.y = 8.4;
+        this.grapple = null;
+        this.audio.release();
+      } else {
+        dir.normalize();
+        this.vel.copy(dir.multiplyScalar(19));
+        this.pos.addScaledVector(this.vel, dt);
       }
-      // reel in slightly for energy (makes swings feel powerful)
-      this.grapple.ropeLen = Math.max(3.2, this.grapple.ropeLen - dt * 1.1);
     } else {
       // Mario-style ground/air control
       const accel = (this.onGround ? ACCEL : AIR_ACCEL) * (onSlick ? 0.16 : 1);
@@ -234,7 +225,6 @@ export class Player {
       this.jumpsLeft = 1;
       this.coyote = COYOTE;
       this.airTime = 0;
-      if (swinging) this.releaseGrapple();
     } else {
       this.onGround = false;
       this.coyote -= dt;
@@ -245,7 +235,7 @@ export class Player {
     if (input.jumpPressed) this.jbuffer = JBUFFER;
     else this.jbuffer -= dt;
     if (this.jbuffer > 0) {
-      if (swinging) {
+      if (this.grapple && this.grapple.mode === 'zip') {
         this.releaseGrapple();
         this.vel.y = Math.max(this.vel.y, 6);
         this.jbuffer = 0;
@@ -268,24 +258,19 @@ export class Player {
     }
 
     // ---- character model ----
+    // snappy: the character turns INSTANTLY with the mouse (faces camera forward)
     this.model.position.copy(this.pos);
     const hSpeed = Math.hypot(this.vel.x, this.vel.z);
-    if (hSpeed > 0.5 || swinging) {
-      const targetYaw = Math.atan2(this.vel.x, this.vel.z);
-      let dy = targetYaw - this.faceYaw;
-      while (dy > Math.PI) dy -= 2 * Math.PI;
-      while (dy < -Math.PI) dy += 2 * Math.PI;
-      this.faceYaw += dy * Math.min(1, dt * 12);
-    }
+    this.faceYaw = zipping ? Math.atan2(this.vel.x, this.vel.z) : this.yaw + Math.PI;
     this.model.rotation.y = this.faceYaw;
-    this.animate(dt, hSpeed, swinging);
+    this.animate(dt, hSpeed, zipping);
 
     // invulnerability blink
     this.model.visible = this.invuln <= 0 || Math.floor(this.invuln * 12) % 2 === 0;
 
-    // ---- rope visuals ---- (re-check grapple: landing may have released it)
+    // ---- rope visuals ---- (re-check grapple: arrival may have released it)
     let ropeTo = null;
-    if (this.grapple && this.grapple.mode === 'swing') ropeTo = this.grapple.anchor;
+    if (this.grapple && this.grapple.mode === 'zip') ropeTo = this.grapple.anchor;
     else if (this.grapple && this.grapple.mode === 'pull' && this.grapple.targetGroup)
       ropeTo = this.grapple.targetGroup.getWorldPosition(new THREE.Vector3());
     if (ropeTo) {
@@ -320,9 +305,9 @@ export class Player {
     if (this.pos.y < -12) this.respawn();
   }
 
-  animate(dt, hSpeed, swinging) {
+  animate(dt, hSpeed, zipping) {
     const R = this.refs;
-    if (swinging) {
+    if (zipping) {
       R.lArm.rotation.x = -2.6;
       R.rArm.rotation.x = -2.6;
       R.lLeg.rotation.x = 0.5;

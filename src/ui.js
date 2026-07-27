@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 export class UI {
   constructor() {
     this.el = {
-      start: $('startScreen'), howto: $('howto'), intro: $('levelIntro'),
+      start: $('startScreen'), howto: $('howto'), about: $('about'), intro: $('levelIntro'),
       hud: $('hud'), pause: $('pauseScreen'), results: $('resultsScreen'),
       gameover: $('gameoverScreen'), victory: $('victoryScreen'),
       objectives: $('objectives'), timer: $('timer'), levelTag: $('levelTag'),
@@ -24,7 +24,7 @@ export class UI {
   }
 
   show(name) {
-    for (const k of ['start', 'howto', 'intro', 'pause', 'results', 'gameover', 'victory'])
+    for (const k of ['start', 'howto', 'about', 'intro', 'pause', 'results', 'gameover', 'victory'])
       this.el[k].classList.add('hidden');
     if (name) this.el[name].classList.remove('hidden');
   }

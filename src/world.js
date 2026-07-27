@@ -79,6 +79,7 @@ export class World {
     this.envH = 0;
     this.trash = [];
     this.rings = [];
+    this.walls = [];      // latchable building surfaces (grapple → zip up)
     this.animals = [];
     this.powerups = [];
     this.npcs = [];
@@ -162,8 +163,10 @@ export class World {
     if (env === 'campus') {
       const school = M.makeBuilding(18, 7, 8, 0xc9b8a0);
       school.position.set(0, 0, -B + 18);
+      M.tagRoot(school, 'wall');
       this.root.add(school);
       this.boxes.push(this.boxFor(school.position, 18, 7.25, 8));
+      this.walls.push(school);
       const sign = M.makeTextPlane('GREEN VALLEY SCHOOL', { w: 10, h: 1.4, bg: '#1f6b38', fontPx: 60 });
       sign.position.set(0, 5.2, -B + 18 + 4.05);
       this.root.add(sign);
@@ -223,8 +226,10 @@ export class World {
         const w = rand(6, 10), h = rand(5, 12), d = rand(6, 10);
         const bld = M.makeBuilding(w, h, d, palette[placed % palette.length]);
         bld.position.set(x, 0, z);
+        M.tagRoot(bld, 'wall');
         this.root.add(bld);
         this.boxes.push(this.boxFor(bld.position, w, h + 0.25, d));
+        this.walls.push(bld);
         placed++;
       }
       this.addLampposts(8, B);
@@ -460,27 +465,6 @@ export class World {
       this.trash.push(item);
     }
 
-    // --- grapple rings ---
-    const nRings = Math.max(10, Math.round(cfg.bounds / 5));
-    for (let i = 0; i < nRings; i++) {
-      const a = (i / nRings) * TAU + rand(-0.2, 0.2);
-      const r = rand(cfg.bounds * 0.3, cfg.bounds * 0.85);
-      const ring = M.makeGrappleRing();
-      ring.position.set(Math.cos(a) * r, rand(6.5, 11), Math.sin(a) * r);
-      M.tagRoot(ring, 'ring');
-      this.root.add(ring);
-      this.rings.push(ring);
-    }
-    if (cfg.env === 'river') {
-      for (const x of [-6, 0, 6]) {
-        const ring = M.makeGrappleRing();
-        ring.position.set(x, 7.5, 0);
-        M.tagRoot(ring, 'ring');
-        this.root.add(ring);
-        this.rings.push(ring);
-      }
-    }
-
     // --- animals with cages ---
     for (const a of cfg.animals) {
       const { group } = M.makeAnimal(a.type);
@@ -705,7 +689,7 @@ export class World {
 
   // ---------------- queries used by the player ----------------
   getGrappleTargets() {
-    const out = [...this.rings];
+    const out = [...this.walls];
     for (const t of this.trash) if (!t.collected && !t.pulling) out.push(t.group);
     if (this.golden && !this.golden.taken) out.push(this.golden.group);
     if (this.boss && this.boss.coreOpen) out.push(this.boss.refs.core);

@@ -30,12 +30,14 @@ from this GitHub repo; every push to `main` auto-redeploys.
   transformation (`applyEnvHealth(0..1)` drives fog/sky/trees/water/flowers/
   smoke), hazards, animals, NPCs, particles, and the boss (`buildBoss`).
 - `src/player.js` — Mario-style controller (accel/friction, coyote time, jump
-  buffer, variable jump, double jump) + pendulum grapple swing + third-person
-  camera. Camera view direction comes from yaw/pitch directly (do NOT change to
-  lookAt(player) — that breaks aiming upward at grapple rings).
+  buffer, variable jump, double jump; character faces camera yaw instantly) +
+  wall-zip grapple (latch a building wall → zip to the point → upward pop;
+  chain latches to climb) + third-person camera. Camera view direction comes
+  from yaw/pitch directly (do NOT change to lookAt(player) — that breaks
+  aiming upward).
 - `src/models.js` — procedural Three.js model factories (ranger, animals, trash,
   bins, boss variants, trees, buildings…). Interactive roots are tagged via
-  `tagRoot(group, kind)` with kind ∈ ring|trash|golden|core for raycasts.
+  `tagRoot(group, kind)` with kind ∈ wall|trash|golden|core for raycasts.
 - `src/levels.js` — 5 level configs (env, trash mix, hazards, boss) + bins + facts.
 - `src/audio.js` — fully procedural WebAudio SFX + adaptive music (brightens
   with environment health).

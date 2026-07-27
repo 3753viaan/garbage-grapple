@@ -130,7 +130,7 @@ class Game {
     this.coreNeed = this.cfg.boss.coreNeed;
     this.levelStats = { trashPts: 0, recycleBonus: 0, wildlifePts: 0, goldenPts: 0 };
     this.celebrateT = 0;
-    this.flags = { moved: 0, doubleJumped: false, swung: false, recycledOnce: false, rescuedOnce: false };
+    this.flags = { moved: 0, doubleJumped: false, latched: false, recycledOnce: false, rescuedOnce: false };
     this.tutorialStep = this.cfg.tutorial ? 0 : -1;
     this._lastTick = -1;
 
@@ -318,7 +318,7 @@ class Game {
   // ---------- player event hooks (tutorial flags) ----------
   onJump() {}
   onDoubleJump() { this.flags.doubleJumped = true; }
-  onSwingStart() { this.flags.swung = true; }
+  onLatch() { this.flags.latched = true; }
 
 
   // ---------- completion ----------
@@ -393,7 +393,7 @@ class Game {
       { html: 'Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move and the <kbd>Mouse</kbd> to look around', done: () => this.flags.moved > 5 },
       { html: 'Press <kbd>SPACE</kbd> to jump — press it <b>again in mid-air</b> to Double Jump!', done: () => this.flags.doubleJumped },
       { html: 'See the glowing ✨ litter? Walk over it — or aim your crosshair at it and <kbd>CLICK</kbd> to grapple it into your bag!', done: () => this.collected >= 1 },
-      { html: 'Now try swinging: aim at a green ⭕ <b>Grapple Ring</b> up high, <b>HOLD CLICK</b> to swing, release to fly!', done: () => this.flags.swung },
+      { html: 'See the school building? Aim at its <b>wall</b> and <kbd>CLICK</kbd> to latch on and <b>zip up it</b>! Latch again mid-air to climb even higher', done: () => this.flags.latched },
       { html: 'Take your litter to the ♻ <b>RECYCLING STATION</b> (green square on the map, bottom-left) and press <kbd>E</kbd>', done: () => this.flags.recycledOnce },
       { html: 'An animal is trapped in a net! Find the pink dot on the map, walk close and press <kbd>E</kbd> to rescue it', done: () => this.flags.rescuedOnce },
       { html: `Boss time! The <b>Litter Imp</b> (red dot on the map) is guarding the campus. Recycle <b>${this.cfg.boss.coreNeed} litter</b> to STUN it!`, done: () => this.world.boss.coreOpen || this.world.boss.state === 'dead' },
@@ -500,7 +500,7 @@ class Game {
     else if (nearStation && this.bag.length > 0) prompt = `Press <kbd>E</kbd> to recycle ${this.bag.length} item${this.bag.length > 1 ? 's' : ''} ♻`;
     else if (this.player.aimHit) {
       const k = this.player.aimHit.kind;
-      if (k === 'ring') prompt = `<kbd>HOLD CLICK</kbd> to swing from the ring ⭕`;
+      if (k === 'wall') prompt = `<kbd>CLICK</kbd> to latch on and zip up the wall 🧗`;
       else if (k === 'trash') prompt = `<kbd>CLICK</kbd> to grapple the litter ✨`;
       else if (k === 'core') prompt = `<kbd>CLICK</kbd> to GRAPPLE THE CORE! ⚡`;
       else if (k === 'golden') prompt = `<kbd>CLICK</kbd> to grab the Golden Bottle! 🏆`;
@@ -534,6 +534,8 @@ $('playBtn').addEventListener('click', () => {
   setTimeout(() => { $('startScreen').classList.remove('fading'); game.loadLevel(0); }, 550);
 });
 $('howtoBtn').addEventListener('click', () => { game.howtoReturn = 'start'; ui.show('howto'); });
+$('aboutBtn').addEventListener('click', () => ui.show('about'));
+$('aboutBack').addEventListener('click', () => ui.show('start'));
 $('pauseHowto').addEventListener('click', () => { game.howtoReturn = 'pause'; ui.show('howto'); });
 $('howtoBack').addEventListener('click', () => ui.show(game.howtoReturn));
 $('liStart').addEventListener('click', () => game.begin());

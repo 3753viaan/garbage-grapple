@@ -34,13 +34,14 @@ SDG 14 (Life Below Water), SDG 15 (Life on Land) — each level awards a themed 
 | **Mouse** | Look / aim the crosshair |
 | **SPACE** | Jump — press again in mid-air to **Double Jump** |
 | **SHIFT** | Sprint |
-| **LEFT CLICK (hold)** | Fire grappling hook at whatever the crosshair targets — release to let go |
+| **LEFT CLICK** | Fire grappling hook at whatever the crosshair targets |
 | **E** | Interact — rescue animals, recycle at the station |
 | **V (hold)** | **Future Vision** — preview the fully restored world |
 | **P / ESC** | Pause |
 
-**Grapple targets:** ⭕ glowing **Grapple Rings** (swing), ✨ glowing **litter** (pulled straight
-into your bag — this is how you reach floating/rooftop trash), and the **boss core**.
+**Grapple targets:** 🏢 **building walls** (latch on and zip up — chain latches to climb to
+rooftops), ✨ glowing **litter** (pulled straight into your bag — this is how you reach
+floating/rooftop trash), and the **boss core**.
 
 **Mario-style movement model:** ground acceleration & friction, sprint, gravity 25 m/s²,
 variable-height jump (release SPACE early = shorter hop), double jump, **coyote time** (0.12 s),
