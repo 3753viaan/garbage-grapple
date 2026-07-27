@@ -63,8 +63,8 @@
   .sdgChip { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
     padding: 5px 12px; border-radius: 20px; }
 
-  /* ============ HOW TO PLAY ============ */
-  #howto { z-index: 70; background: rgba(4, 18, 10, .88); backdrop-filter: blur(6px); }
+  /* ============ HOW TO PLAY / ABOUT ============ */
+  #howto, #about { z-index: 70; background: rgba(4, 18, 10, .72); backdrop-filter: blur(6px); }
   .card { background: linear-gradient(180deg, #12402605, #0d301c00), rgba(9, 33, 20, .97);
     border: 2px solid rgba(125,255,160,.35); border-radius: 22px; padding: 30px 40px;
     max-width: 860px; width: 92vw; max-height: 88vh; overflow-y: auto; color: var(--cream);
@@ -373,7 +373,10 @@
     <table class="statTable" id="resTable"></table>
     <div class="badgeRow" id="resBadge"></div>
     <div class="ecoFact" id="resFact"></div>
-    <div class="cardBtns"><button class="btn" id="nextBtn">Next Mission ➜</button></div>
+    <div class="cardBtns">
+      <button class="btn" id="nextBtn">Next Mission ➜</button>
+      <button class="btn ghost small" id="resMenuBtn" style="align-self:center;">Main Menu</button>
+    </div>
   </div>
 </div>
 

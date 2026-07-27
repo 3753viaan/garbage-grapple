@@ -180,6 +180,7 @@ export class Player {
     let maxSpeed = RUN_SPEED * (sprint ? SPRINT_MULT : 1) * speedBoost * (inWater ? 0.42 : 1);
 
     const zipping = this.grapple && this.grapple.mode === 'zip';
+    this._zipMode = zipping ? (this.grapple.ground ? 'ground' : 'wall') : null;
 
     if (zipping) {
       // zip straight to the latched point on the wall
@@ -274,7 +275,7 @@ export class Player {
     const hSpeed = Math.hypot(this.vel.x, this.vel.z);
     this.faceYaw = zipping ? Math.atan2(this.vel.x, this.vel.z) : this.yaw + Math.PI;
     this.model.rotation.y = this.faceYaw;
-    this.animate(dt, hSpeed, zipping);
+    this.animate(dt, hSpeed, this._zipMode);
 
     // invulnerability blink
     this.model.visible = this.invuln <= 0 || Math.floor(this.invuln * 12) % 2 === 0;
@@ -318,16 +319,30 @@ export class Player {
     if (this.pos.y < -12) this.respawn();
   }
 
-  animate(dt, hSpeed, zipping) {
+  animate(dt, hSpeed, zipMode) {
     const R = this.refs;
-    if (zipping) {
+    if (zipMode === 'wall') {
+      // reaching up the rope
       R.lArm.rotation.x = -2.6;
       R.rArm.rotation.x = -2.6;
+      R.lArm.rotation.z = R.rArm.rotation.z = 0;
       R.lLeg.rotation.x = 0.5;
       R.rLeg.rotation.x = -0.3;
       R.torso.rotation.x = 0.25;
       return;
     }
+    if (zipMode === 'ground') {
+      // dash pose: arms swept out to the sides
+      R.lArm.rotation.x = -0.35;
+      R.rArm.rotation.x = -0.35;
+      R.lArm.rotation.z = -1.2;
+      R.rArm.rotation.z = 1.2;
+      R.lLeg.rotation.x = 0.4;
+      R.rLeg.rotation.x = -0.2;
+      R.torso.rotation.x = 0.35;
+      return;
+    }
+    R.lArm.rotation.z = R.rArm.rotation.z = 0;
     R.torso.rotation.x = 0;
     if (!this.onGround) {
       // jump pose

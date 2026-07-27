@@ -467,6 +467,17 @@ export class World {
       const item = { group: g, type, collected: false, pulling: false, pullT: 0, bob: rand(0, TAU), baseY: pos.y };
       g.userData.item = item;
       this.trash.push(item);
+      // elevated litter (treetops/rooftops) gets a glowing beacon so it's easy to spot
+      if (elevated && pos.y > 1.4) {
+        g.scale.setScalar(1.3);
+        if (g.userData.halo) g.userData.halo.scale.setScalar(1.5);
+        const beam = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.34, pos.y + 0.6, 10, 1, true),
+          new THREE.MeshBasicMaterial({ color: 0xfff3ae, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+        beam.position.set(pos.x, (pos.y + 0.6) / 2, pos.z);
+        this.root.add(beam);
+        item.beam = beam;
+      }
     }
 
     // --- animals with cages ---
@@ -775,6 +786,7 @@ export class World {
     const wp = item.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
     this.particles.burst(wp, '✨', 7, { size: 0.35, life: 0.8 });
     this.root.remove(item.group);
+    if (item.beam) { this.root.remove(item.beam); item.beam = null; }
   }
 
   rescue(animal) {
@@ -887,6 +899,7 @@ export class World {
         g.userData.halo.material.opacity = 0.4 + Math.sin(T * 3 + item.bob) * 0.2;
         g.userData.halo.rotation.z += dt;
       }
+      if (item.beam) item.beam.material.opacity = 0.24 + Math.sin(T * 3 + item.bob) * 0.14;
       if (game.power.magnet > 0 && game.bagFree() && g.position.distanceTo(playerPos) < 13) item.pulling = true;
     }
 

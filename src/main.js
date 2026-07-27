@@ -119,6 +119,7 @@ class Game {
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
     this.world = new World(scene, this.cfg, audio);
     this.player = new Player(scene, camera, this.world, audio);
+    this.player.model.add(makeNameTag(this.playerName || 'Eco Ranger'));
 
     this.score = this.scoreAtLevelStart = this.totalScore;
     this.timeLeft = this.cfg.time;
@@ -530,6 +531,31 @@ class Game {
   }
 }
 
+// billboard name tag shown above the character's head
+function makeNameTag(name) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const x = c.getContext('2d');
+  x.font = '900 58px "Segoe UI", sans-serif';
+  const w = Math.min(490, x.measureText(name).width + 70);
+  x.fillStyle = 'rgba(5,20,12,.68)';
+  x.beginPath();
+  x.roundRect((512 - w) / 2, 24, w, 80, 40);
+  x.fill();
+  x.strokeStyle = 'rgba(125,255,160,.55)';
+  x.lineWidth = 4;
+  x.stroke();
+  x.fillStyle = '#eafff0';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(name, 256, 66);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sp.scale.set(2.2, 0.55, 1);
+  sp.position.set(0, 2.3, 0);
+  return sp;
+}
+
 const game = new Game();
 
 // ---------------- guide trail: a line of ground arrows to the nearest litter ----------------
@@ -626,11 +652,12 @@ $('playBtn').addEventListener('click', () => {
   $('startScreen').classList.add('fading');
   setTimeout(() => { $('startScreen').classList.remove('fading'); game.loadLevel(0); }, 550);
 });
-$('howtoBtn').addEventListener('click', () => { game.howtoReturn = 'start'; ui.show('howto'); });
-$('aboutBtn').addEventListener('click', () => ui.show('about'));
-$('aboutBack').addEventListener('click', () => ui.show('start'));
-$('pauseHowto').addEventListener('click', () => { game.howtoReturn = 'pause'; ui.show('howto'); });
-$('howtoBack').addEventListener('click', () => ui.show(game.howtoReturn));
+$('howtoBtn').addEventListener('click', () => ui.overlay('howto', true));
+$('aboutBtn').addEventListener('click', () => ui.overlay('about', true));
+$('aboutBack').addEventListener('click', () => ui.overlay('about', false));
+$('pauseHowto').addEventListener('click', () => ui.overlay('howto', true));
+$('howtoBack').addEventListener('click', () => ui.overlay('howto', false));
+$('resMenuBtn').addEventListener('click', () => game.quitToMenu());
 $('liStart').addEventListener('click', () => game.begin());
 $('resumeBtn').addEventListener('click', () => game.resume());
 $('restartBtn').addEventListener('click', () => game.retry());

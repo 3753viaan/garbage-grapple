@@ -30,6 +30,9 @@ export class UI {
   }
   hudVisible(v) { this.el.hud.classList.toggle('hidden', !v); }
 
+  // show/hide a card on TOP of whatever is currently visible (menu stays behind)
+  overlay(name, on) { this.el[name].classList.toggle('hidden', !on); }
+
   setLevelIntro(cfg) {
     this.el.liNum.textContent = `MISSION ${cfg.id} OF 5`;
     this.el.liName.textContent = cfg.name;
