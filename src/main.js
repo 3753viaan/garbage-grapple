@@ -362,6 +362,18 @@ class Game {
     this.totals.animals += this.animalsRescued;
     this.totals.score = this.totalScore;
     this.badges.push(this.cfg.badge.icon);
+    // level is beaten — advance the save NOW so quitting from the results
+    // screen continues at the NEXT level, not the one just completed
+    try {
+      if (this.levelIdx + 1 < LEVELS.length) {
+        localStorage.setItem('gg-progress', JSON.stringify({
+          idx: this.levelIdx + 1, totalScore: this.totalScore, totals: this.totals,
+          badges: this.badges, name: this.playerName,
+        }));
+      } else {
+        localStorage.removeItem('gg-progress');
+      }
+    } catch (e) {}
     const rows = [
       ['🗑 Litter collected', `+${this.levelStats.trashPts.toLocaleString()}`],
       ['♻ Recycling bonus', `+${this.levelStats.recycleBonus.toLocaleString()}`],

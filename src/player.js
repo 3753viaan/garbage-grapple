@@ -193,19 +193,19 @@ export class Player {
       if (dist < 1.6 || this.grapple.t > 2.5) {
         dir.normalize();
         if (this.grapple.ground) {
-          // ground dash: keep momentum with a small hop
-          this.vel.copy(dir.multiplyScalar(7));
-          this.vel.y = 3.2;
+          // ground dash: keep momentum and launch upward at the end
+          this.vel.copy(dir.multiplyScalar(8.5));
+          this.vel.y = 7;
         } else {
-          // wall latch: pop upward so you can mantle onto the roof — or latch again to climb
-          this.vel.copy(dir.multiplyScalar(4));
-          this.vel.y = 8.4;
+          // wall latch: big pop upward so you can mantle onto the roof — or latch again to climb
+          this.vel.copy(dir.multiplyScalar(4.5));
+          this.vel.y = 9.5;
         }
         this.grapple = null;
         this.audio.release();
       } else {
         dir.normalize();
-        this.vel.copy(dir.multiplyScalar(19));
+        this.vel.copy(dir.multiplyScalar(27));
         this.pos.addScaledVector(this.vel, dt);
       }
     } else {
