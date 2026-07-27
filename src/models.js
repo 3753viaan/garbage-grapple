@@ -76,8 +76,11 @@ export function makeRanger() {
   }
   g.add(head);
 
-  function limb(matA, matB, upperLen, lowerR) {
+  function limb(matA, matB, upperLen, lowerR, jointR) {
     const pivot = new THREE.Group();
+    // joint sphere at the pivot keeps the limb visually attached to the body
+    const joint = new THREE.Mesh(new THREE.SphereGeometry(jointR, 10, 8), matA);
+    pivot.add(joint);
     const upper = new THREE.Mesh(new THREE.CapsuleGeometry(lowerR, upperLen, 4, 8), matA);
     upper.position.y = -upperLen / 2 - lowerR;
     pivot.add(upper);
@@ -86,10 +89,10 @@ export function makeRanger() {
     pivot.add(tip);
     return pivot;
   }
-  const lArm = limb(shirt, skin, 0.34, 0.075); lArm.position.set(-0.34, 1.32, 0); g.add(lArm);
-  const rArm = limb(shirt, skin, 0.34, 0.075); rArm.position.set(0.34, 1.32, 0); g.add(rArm);
-  const lLeg = limb(pants, shoe, 0.4, 0.09); lLeg.position.set(-0.14, 0.72, 0); g.add(lLeg);
-  const rLeg = limb(pants, shoe, 0.4, 0.09); rLeg.position.set(0.14, 0.72, 0); g.add(rLeg);
+  const lArm = limb(shirt, skin, 0.34, 0.075, 0.12); lArm.position.set(-0.3, 1.32, 0); g.add(lArm);
+  const rArm = limb(shirt, skin, 0.34, 0.075, 0.12); rArm.position.set(0.3, 1.32, 0); g.add(rArm);
+  const lLeg = limb(pants, shoe, 0.4, 0.09, 0.13); lLeg.position.set(-0.14, 0.72, 0); g.add(lLeg);
+  const rLeg = limb(pants, shoe, 0.4, 0.09, 0.13); rLeg.position.set(0.14, 0.72, 0); g.add(rLeg);
 
   // trash backpack — visibly fills up
   const backpack = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.25, 4, 10), mat(0xd9a824, { roughness: 0.9 }));

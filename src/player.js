@@ -66,7 +66,9 @@ export class Player {
 
   chestPos() { return this.pos.clone().add(new THREE.Vector3(0, 1.3, 0)); }
   handPos() {
-    return this.model.localToWorld(new THREE.Vector3(0.34, 1.15, 0.2));
+    // actual gauntlet-hand position, following the arm's current pose
+    this.refs.rArm.updateWorldMatrix(true, false);
+    return this.refs.rArm.localToWorld(new THREE.Vector3(0, -0.62, 0));
   }
 
   respawn() {

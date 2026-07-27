@@ -115,6 +115,13 @@ class Game {
   loadLevel(idx) {
     this.levelIdx = idx;
     this.cfg = LEVELS[idx];
+    // persist progress so quitting to the menu (or closing the tab) never loses it
+    try {
+      localStorage.setItem('gg-progress', JSON.stringify({
+        idx, totalScore: this.totalScore, totals: this.totals,
+        badges: this.badges, name: this.playerName,
+      }));
+    } catch (e) { /* storage unavailable — progress just won't persist */ }
     if (this.world) this.world.dispose();
     if (this.player) { scene.remove(this.player.model, this.player.rope, this.player.hook); }
     this.world = new World(scene, this.cfg, audio);
@@ -185,6 +192,7 @@ class Game {
     ui.hudVisible(false);
     audio.stopMusic();
     document.exitPointerLock();
+    refreshStartScreen();
   }
 
   // ---------- scoring / collection ----------
@@ -374,6 +382,7 @@ class Game {
   nextLevel() {
     if (this.state !== 'results') return; // double-click guard
     if (this.levelIdx >= LEVELS.length - 1) {
+      try { localStorage.removeItem('gg-progress'); } catch (e) {}
       audio.stopMusic();
       audio.fanfare();
       ui.victory(this.playerName, this.totals, this.badges);
@@ -606,12 +615,7 @@ Game.prototype.updateGuide = function (dt) {
     if (!cur) cur = best;
     else if (best && best !== cur && bd < cur.group.position.distanceTo(this.player.pos) - 3) cur = best;
     gd.item = cur;
-    if (cur) target = cur.group.position;
-    if (!target) {
-      const b = this.world.boss;
-      if (b && b.state !== 'dead') { target = b.pos; color = 0xff5f57; }
-      else if (this.world.golden && !this.world.golden.taken) { target = this.world.golden.group.position; color = 0xfff3ae; }
-    }
+    if (cur) target = cur.group.position;   // litter only — no boss/bottle arrows
   }
   if (!target) { for (const m of g.children) m.visible = false; return; }
   const mat = g.userData.mat;
@@ -643,15 +647,46 @@ Game.prototype.updateGuide = function (dt) {
 
 // ---------------- menu wiring ----------------
 const $ = id => document.getElementById(id);
-$('playBtn').addEventListener('click', () => {
-  game.playerName = $('playerName').value.trim() || 'Eco Ranger';
-  game.totalScore = 0;
-  game.totals = { recycled: 0, animals: 0, score: 0 };
-  game.badges = [];
+
+function readProgress() {
+  try { return JSON.parse(localStorage.getItem('gg-progress')); } catch (e) { return null; }
+}
+
+function refreshStartScreen() {
+  const s = readProgress();
+  const has = !!(s && s.idx > 0);
+  $('playBtn').textContent = has ? `▶ Continue (Level ${s.idx + 1})` : '▶ Play';
+  $('newGameBtn').classList.toggle('hidden', !has);
+  if (has && s.name && !$('playerName').value) $('playerName').value = s.name;
+}
+
+function startGame(fresh) {
+  const s = fresh ? null : readProgress();
+  game.playerName = $('playerName').value.trim() || (s && s.name) || 'Eco Ranger';
+  if (s && s.idx > 0) {
+    game.totalScore = s.totalScore || 0;
+    game.totals = s.totals || { recycled: 0, animals: 0, score: 0 };
+    game.badges = s.badges || [];
+  } else {
+    game.totalScore = 0;
+    game.totals = { recycled: 0, animals: 0, score: 0 };
+    game.badges = [];
+  }
   audio.ensure();
   $('startScreen').classList.add('fading');
-  setTimeout(() => { $('startScreen').classList.remove('fading'); game.loadLevel(0); }, 550);
+  setTimeout(() => {
+    $('startScreen').classList.remove('fading');
+    game.loadLevel(s && s.idx > 0 ? s.idx : 0);
+  }, 550);
+}
+
+$('playBtn').addEventListener('click', () => startGame(false));
+$('newGameBtn').addEventListener('click', () => {
+  try { localStorage.removeItem('gg-progress'); } catch (e) {}
+  refreshStartScreen();
+  startGame(true);
 });
+refreshStartScreen();
 $('howtoBtn').addEventListener('click', () => ui.overlay('howto', true));
 $('aboutBtn').addEventListener('click', () => ui.overlay('about', true));
 $('aboutBack').addEventListener('click', () => ui.overlay('about', false));
